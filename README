@@ -1,6 +1,6 @@
 Drapache:
 
-A python server that uses the dropbox API to serve files
+A python server that uses the dropbox API to serve files that are hosted on dropbox
 
 It will create an index for a folder if one doesn't exist
 
