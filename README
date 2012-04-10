@@ -1,0 +1,16 @@
+Drapache:
+
+A python server that uses the dropbox API to serve files
+
+It will create an index for a folder if one doesn't exist
+
+Static files work great.
+
+I'm trying to include the ability to execute python scripts that in a dropbox folder, this is where problems come in.
+
+It works, but its very hack-y and unstable
+
+
+
+I'm hosting an instance on heroku, go to get.drapache.com to set it up.
+
