@@ -115,7 +115,7 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		return sub_path,query
 		
 		
-class DropboxMultiThreadHTTPServer(SocketServer.ThreadingMixIn,BaseHTTPServer.HTTPServer):
+class DropboxMultiThreadHTTPServer(SocketServer.ForkingMixIn,BaseHTTPServer.HTTPServer):
 	
 	def set_config(self,subdomain_manager_factory,dropbox_client_factory):
 		self.get_subdomain_manager = subdomain_manager_factory

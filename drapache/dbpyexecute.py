@@ -75,9 +75,10 @@ class DBPYExecThread(KThread):
 		try:
 			#getting around the sanboxes protections by manually getting to the call
 			self.sandbox._call(pysandbox.sandbox_class._call_exec, (self.code,self.builtins,None), {})
+			#exec self.code in self.builtins,{}
 		
 		except Exception as e:
-			
+			sys.stderr.write('\nage\n')
 			self.error = e
 			
 class DBPYExecProcess(multiprocessing.Process):
@@ -93,10 +94,11 @@ class DBPYExecProcess(multiprocessing.Process):
 	def run(self):
 		
 		try:
-			self.sandbox._call(pysandbox.sandbox_class._call_exec, (self.code,self.builtins,None), {})
+			#self.sandbox._call(pysandbox.sandbox_class._call_exec, (self.code,self.builtins,None), {})
+			exec self.code in self.builtins,{}
 		
 		except Exception as e:
-			
+			sys.stderr.write('exception in thread')
 			self.error = e
 
 def get_sandbox():
@@ -154,8 +156,8 @@ def execute(filestring,**kwargs):
 				sandbox_thread.kill()
 				sandbox_thread.join()
 			
-				if sandbox_thread.error is not None:
-					raise sandbox_thread.error
+			if sandbox_thread.error is not None:
+				raise sandbox_thread.error
 					
 		elif USE == 'process':
 			sys.stderr.write("starting run exec procss\n")
@@ -176,6 +178,10 @@ def execute(filestring,**kwargs):
 				
 				if sandbox_process.error is not Noen:
 					raise sandbox_process.error
+					
+		elif USE == 'single':
+			
+			exec filestring in builtin_dict,{}
 
 	except:
 		if PRINT_EXCEPTIONS:
