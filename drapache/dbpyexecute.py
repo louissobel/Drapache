@@ -94,8 +94,8 @@ class DBPYExecProcess(multiprocessing.Process):
 	def run(self):
 		
 		try:
-			#self.sandbox._call(pysandbox.sandbox_class._call_exec, (self.code,self.builtins,None), {})
-			exec self.code in self.builtins,{}
+			self.sandbox._call(pysandbox.sandbox_class._call_exec, (self.code,self.builtins,None), {})
+			#exec self.code in self.builtins,{}
 		
 		except Exception as e:
 			sys.stderr.write('exception in thread')
