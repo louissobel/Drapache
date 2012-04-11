@@ -74,12 +74,21 @@ class DBPYExecThread(KThread):
 		
 		try:
 			#getting around the sanboxes protections by manually getting to the call
-			self.sandbox._call(pysandbox.sandbox_class._call_exec, (self.code,self.builtins,None), {})
-			#exec self.code in self.builtins,{}
+			for protection in self.sandbox.protections:
+				protection.enable(self.sandbox)
+				
+			exec self.code in self.builtins
 		
 		except Exception as e:
-			sys.stderr.write('\nage\n')
+			
+			#for protection in reversed(self.sandbox.protections):
+			#	protection.disable(self.sandbox)
+			
 			self.error = e
+			
+		finally:
+			for protection in reversed(self.sandbox.protections):
+				protection.disable(self.sandbox)
 			
 class DBPYExecProcess(multiprocessing.Process):
 	
@@ -150,8 +159,8 @@ def execute(filestring,**kwargs):
 		
 			if sandbox_thread.isAlive():
 				#time to kill it
-				for protection in reversed(sandbox.protections):
-					protection.disable(sandbox)
+				#for protection in reversed(sandbox.protections):
+				#	protection.disable(sandbox)
 			
 				sandbox_thread.kill()
 				sandbox_thread.join()
