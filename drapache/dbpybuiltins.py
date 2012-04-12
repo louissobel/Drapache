@@ -6,6 +6,7 @@ import dbapijinja
 import sys
 import signal
 import time
+import pprint
 	
 def get_builtins(**kwargs):
 	"""
@@ -27,14 +28,16 @@ def get_builtins(**kwargs):
     
 		def outer_wrapper(*args,**kwargs):
 
-			for p in reversed(sandbox.protections):
-				p.disable(sandbox)
+			try:
+			    for p in reversed(sandbox.protections):
+				    p.disable(sandbox)
 			
-			retval = function(*args,**kwargs)
+			        retval = function(*args,**kwargs)
 			
-			#redo the protections
-			for p in sandbox.protections:
-				p.enable(sandbox)
+			finally:
+		        #redo the protections
+		        for p in sandbox.protections:
+			        p.enable(sandbox)
 			
 			return retval
 		
@@ -53,6 +56,17 @@ def get_builtins(**kwargs):
 		
 		print dbapijinja.render_dropbox_template(client,path,with_data,search_root)
 		
+		
+	@register
+	def pretty_print(thingy):
+	    """
+	    Pretty prints the given thingy
+	    """
+	    printer = pprint.PrettyPrinter(indent=4)
+	    printer.pprint(thingy)
+	    
+	    
+	    
 	@register
 	def die(message=""):
 		"""
