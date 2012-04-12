@@ -16,7 +16,7 @@ def get_builtins(**kwargs):
 	"""
 	
 	client = kwargs['client']
-	get_params = kwargs['get_params']
+	get_params = kwargs['get_params'] or {}
 	sandbox = kwargs['sandbox']
 	
 	
@@ -27,19 +27,20 @@ def get_builtins(**kwargs):
 		curlocs = locals()
     
 		def outer_wrapper(*args,**kwargs):
-
+            
+			retval = None
 			try:
 			    for p in reversed(sandbox.protections):
 				    p.disable(sandbox)
 			
-			        retval = function(*args,**kwargs)
+			    retval = function(*args,**kwargs)
 			
 			finally:
-		        #redo the protections
-		        for p in sandbox.protections:
-			        p.enable(sandbox)
-			
-			return retval
+		        #redo the protection
+				for p in sandbox.protections:
+					p.enable(sandbox)
+				
+				return retval
 		
 		
 		built_in_hash[function.func_name] = outer_wrapper
