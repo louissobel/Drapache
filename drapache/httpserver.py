@@ -11,6 +11,7 @@ import urlparse
 
 import dbapiserver
 
+import subdomain_managers
 
 
 
@@ -56,7 +57,7 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		
 			try:
 				subdomain_exists = subdomain_manager.check_subdomain(subdomain)
-			except drapache_subdomain.SubdomainException as e:
+			except subdomain_managers.SubdomainException as e:
 				self.send_error(503,"Error in subdomain lookup:\n"+e.message)
 				return None
 		
@@ -68,7 +69,7 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			
 			try:
 				subdomain_token = subdomain_manager.get_token(subdomain)
-			except drapache_subdomain.SubdomainException as e:
+			except subdomain_managers.SubdomainException as e:
 				self.end_error(503,"Error in subdomain lookup:\n"+e.message)
 				return None
 			

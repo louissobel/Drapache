@@ -27,11 +27,3 @@ class DropboxClientCreator:
 		return client
 		
 		
-def generate_oauth_credentials():
-	sess = dropbox.session.DropboxSession(APP_KEY,APP_SECRET,'app_folder')
-	rt = sess.obtain_request_token()
-	url = sess.build_authorize_url(rt)
-	print url
-	raw_input()
-	at = sess.obtain_access_token(rt)
-	print at

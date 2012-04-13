@@ -10,6 +10,8 @@ import sys
 import urlparse
 import urllib
 
+import subdomain_managers
+
 import threading
 
 import dbapiserver
@@ -49,7 +51,7 @@ class DrapacheTwistdResource(resource.Resource):
 		
 			try:
 				subdomain_exists = subdomain_manager.check_subdomain(subdomain)
-			except drapache_subdomain.SubdomainException as e:
+			except subdomain_managers.SubdomainException as e:
 				return ErrorPage(503,"Error in subdomain lookup:\n"+e.message,None).render(request)
 		
 		
@@ -60,7 +62,7 @@ class DrapacheTwistdResource(resource.Resource):
 			
 			try:
 				subdomain_token = subdomain_manager.get_token(subdomain)
-			except drapache_subdomain.SubdomainException as e:
+			except subdomain_managers.SubdomainException as e:
 				return ErrorPage(503,"Error in subdomain lookup:\n"+e.message,None).render(request)
 			
 			subdomain_client = self.get_dropbox_client(subdomain_token)

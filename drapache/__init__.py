@@ -1,4 +1,4 @@
-import subdomain
+import subdomain_managers
 import dbapiaccess
 from instance import Drapache
 

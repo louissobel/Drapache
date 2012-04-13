@@ -4,13 +4,33 @@ A python server that uses the dropbox API to serve files that are hosted on drop
 
 It will create an index for a folder if one doesn't exist
 
-Static files work great.
+It also can execute python scripts identified by files with a .dbpy extension.
 
-I'm trying to include the ability to execute python scripts that in a dropbox folder, this is where problems come in.
+There are special functions and objects accessible from inside these python scripts to make a dynamic web app.
+Read about these special functions at get.drapache.com/docs.
 
-It works, but its very hack-y and unstable
-
-
+These special functions are where contributions will be most helpful, they can be found in dbpybuiltins.py
+I'm going to nail down what exactly these will have access to, but it is easy enough to make it possible for them
+to have a reference to anything.
 
 I'm hosting an instance on heroku, go to get.drapache.com to set it up.
+
+If you want to host an instance locally do the following:
+
+	0. make sure that all the requirements present in requirements.txt are satisfied
+		(pip install -r requirements.txt will do it, as should starting a new virtualenv I think)
+	1. Go to dropbox.com/developers and create a new app
+	2. Fill in the file config.py with the app key and secret of that new app
+	3. run `python get_dropbox_oauth.py [TESTING_SUBDOMAIN] >> [SUBDOMAIN_FILE]`
+		(where TESTING_SUBDOMAIN is the subdomain you want to add to your local instance,
+		and SUBDOMAIN_FILE is the name of the file in which you want to save subdomains)
+	4. In config.py, fill in the SUBDOMAIN_FILE variable with the file path from step 3.
+	5. Add a line like '127.0.0.1	TESTING_SUBDOMAIN.localhost' to your /etc/hosts file
+		(this enables local subdomain routing.. if there is a better way let me know!)
+	6. Run `python server.py` and you should have a drapache instance on localhost (the default port is 5501)
+	
+	Notes:
+		- add more testing subdomains by repeating step 3 for other subdomains
+		- There are other ways of managing subdomains than a flat file.. look in subdomain_manager.py for the base class
+		and an implementation of managing subdomains with mysql
 
