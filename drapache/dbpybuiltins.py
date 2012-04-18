@@ -56,10 +56,10 @@ def get_builtins(**kwargs):
 	sandbox = kwargs['sandbox']
 
 	
-	built_in_hash = {'GETPARAMS':get_params,'SESSION':session.inner_dict}
+	built_in_hash = {'GETPARAMS':get_params,'SESSION':None}
 	def register(function):
 
-    
+
 		def outer_wrapper(*args,**kwargs):
             
 			retval = None
@@ -110,7 +110,7 @@ def get_builtins(**kwargs):
 		return file_exists
 			
 	@register
-	def _release_lock():
+	def _release_lock(path):
 		
 		#throws an IOError if it doesn't work
 		locker.release(path)
@@ -166,7 +166,6 @@ def get_builtins(**kwargs):
 			if from_data is None:
 				json_file = open_file(path,to='json',timeout=timeout) 
 				out_json = json_file.json_object
-				sys.stderr.write(':'+str(out_json)+"\n")
 			else:
 				json_file = open_file(path,to='json',timeout=Timeout,allow_download=False)
 				json_file.json_object = from_data
@@ -217,16 +216,12 @@ def get_builtins(**kwargs):
 		try:
 			return json.load(open_file(path))
 		except ValueError:
-			raise ValueError('Unable to parse json file')
-			
-	@register
-	def list_directory_contents(path):
-		pass
-		
+			raise ValueError('Unable to parse json file')		
 		
 	@register
 	def start_session():
 		session.start()
+		globals()['SESSION'] = session.inner_dict
 		
 	@register
 	def destroy_session():
@@ -270,6 +265,11 @@ def get_builtins(**kwargs):
 		Raises an Exception
 		"""
 		raise Exception(message)
+		
+		
+	@register
+	def namespace_inject(k,v):
+		globals()['k'] = v
 		
 	
 	

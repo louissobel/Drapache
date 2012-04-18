@@ -3,6 +3,9 @@ dropbox==1.3
 markdown
 beaker
 
+#for beaker
+PyCrypto
+
 
 ### only needed if using mysql for the subdomain list
 #Mysql-python

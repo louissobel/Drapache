@@ -97,9 +97,8 @@ class DBPYExecThread(KThread):
 			#finishing up
 			try:
 				self.locker.close_all()
-				
+
 				session_header = self.session.get_header()
-				sys.stderr.write('Session header: '+str(session_header))
 				if session_header:
 					self.response.set_header(*self.session.get_header())
 
@@ -143,13 +142,9 @@ def execute(filestring,**kwargs):
 	
 	request = kwargs['request']
 	
-	for k in request.headers:
-		sys.stderr.write('header key:%s\n'%k)
-	
 
 	cookie = request.headers.get('Cookie',None)
 	
-	sys.stderr.write("cookie:%s\n"%str(cookie))
 	session = sessions.DrapacheSession(cookie)
 	
 	builtin_params = dict(

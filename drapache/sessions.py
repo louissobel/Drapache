@@ -32,9 +32,7 @@ class DrapacheSession:
 				self.beaker_dict['cookie'] = self.cookie
 			
 			self.beaker_session = beaker.session.CookieSession(self.beaker_dict,validate_key=self.validate_key,encrypt_key=self.encrypt_key)
-			
-			sys.stderr.write("Starting session from dbpy with dict:%s\n"%str(self.beaker_session))
-			
+						
 			self.update_dict()
 		
 	def destroy(self):
@@ -49,12 +47,9 @@ class DrapacheSession:
 		if self.beaker_session is None:
 			return False
 		
-		
-		sys.stderr.write("Writing to session with inner dict:%s\n"%str(self.inner_dict))
 		self.set_dict()
 		
 		self.beaker_session.save()
-		sys.stderr.write("This is what the beaker cookie is like now:%s\n"%str(self.beaker_session))
 		if self.beaker_dict.get('set_cookie',False):
 			return ('Set-Cookie',self.beaker_dict['cookie_out'])
 		else:
@@ -64,7 +59,6 @@ class DrapacheSession:
 	def update_dict(self):
 		self.inner_dict.clear()
 		self.inner_dict.update(dict((k,v) for k,v in self.beaker_session.items() if not k.startswith('_')))
-		sys.stderr.write('getdict:'+str(self.inner_dict)+'\n')
 		
 	def set_dict(self):
 		

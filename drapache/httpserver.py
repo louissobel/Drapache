@@ -50,7 +50,6 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			request.headers = self.headers
 		
 		
-			sys.stderr.write('here\n')
 		
 			path,query_string = self.parse_raw_path(self.path)
 		
@@ -90,13 +89,11 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			
 			subdomain_client = self.server.get_dropbox_client(subdomain_token)
 		
-			sys.stderr.write('here2\n')
 			file_server = dbapiserver.FileServer(subdomain_client,request)
 		
 			response = file_server.serve(path)
 			
 			if response.error:
-				sys.stderr.write('here-error\n')
 				self.send_error(response.status,response.body)
 				return None
 		
@@ -115,8 +112,7 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 	def parse_raw_path(self,path):
 		"""
 		pulls out the user, the path, and the query if any
-		
-		the routing for now is going to be that the user is the first "directory"
+
 		"""
 		
 		#*.drapache:port/<the rest of the path>
@@ -145,7 +141,7 @@ class DropboxForkingHTTPServer(SocketServer.ForkingMixIn,BaseHTTPServer.HTTPServ
 		try:
 			BaseHTTPServer.HTTPServer.finish_request(self,*args,**kwargs)
 		except Exception as e:
-			sys.stderr.write("Uncought response exception: %s\n"%str(e))
+			sys.stderr.write("[error] Uncought response exception: %s\n"%str(e))
 
 	
 

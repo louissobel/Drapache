@@ -132,7 +132,6 @@ class JSONDropboxFile(LiveDropboxFile):
 		
 	def _update(self,client):
 		self.seek(0)
-		sys.stderr.write(':'+str(self.json_object)+"\n")
 		
 		try:
 			json.dump(self.json_object,self)
@@ -262,7 +261,7 @@ class DropboxFileLocker:
 
 	def close_all(self,):
 		for file_h in self.open_files:
-			file_h.close()
+			file_h.close(locker=self)
 			
 	def register_open_file(self,file_h):
 		self.open_files.append(file_h)

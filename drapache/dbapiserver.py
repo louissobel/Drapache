@@ -5,6 +5,7 @@ import dropbox
 
 import dbpyexecute
 import index_generator
+import util
 from util import ResponseObject,DropacheException
 
 import os.path
@@ -42,6 +43,7 @@ class FileServer:
 			returns a redirect request (these will also be able to come fro)
 		"""
 		
+		#anything prefixed with '_' is not accessable
 		path_components = path.split('/')
 		for component in path_components:
 			if component.startswith('_'):
@@ -108,9 +110,7 @@ class FileServer:
 			return ResponseObject(200,f,headers)
 			
 		
-		param_dict = {}
-		param_dict['client'] = self.client
-		param_dict['request'] = self.request
+		param_dict = dict(client=self.client,request=self.request)
 		
 		return dbpyexecute.execute(f,**param_dict)
 	
