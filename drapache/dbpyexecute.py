@@ -13,9 +13,12 @@ import trace
 
 import multiprocessing
 
+import sessions
+
 import sandbox as pysandbox
 from util import ResponseObject
 import dbpybuiltins
+import dbapiio
 
 class Timeout(Exception):
 	pass
@@ -62,53 +65,51 @@ class KThread(threading.Thread):
 
 class DBPYExecThread(KThread):
 	
-	def __init__(self,sandbox,builtins,code,timeout):
+	def __init__(self,sandbox,builtins,locker,session,response,code,timeout):
 		KThread.__init__(self)
 		self.sandbox = sandbox
 		self.builtins = builtins
+		self.locker = locker
+		self.session = session
+		self.response = response
 		self.code = code
 		self.timeout = timeout
 		self.error = None
+		self.error_traceback = ""
 		
 	def run(self):
 		
 		try:
-			#getting around the sanboxes protections by manually getting to the call
+			#manually turning on the sandbox protections
 			for protection in self.sandbox.protections:
 				protection.enable(self.sandbox)
 				
 			exec self.code in self.builtins
 		
-		except Exception as e:
-			
-			#for protection in reversed(self.sandbox.protections):
-			#	protection.disable(self.sandbox)
-			
+		except Exception as e:			
 			self.error = e
 			
 		finally:
 			for protection in reversed(self.sandbox.protections):
 				protection.disable(self.sandbox)
 			
-class DBPYExecProcess(multiprocessing.Process):
-	
-	def __init__(self,kwargs,code,timeout):
-		multiprocessing.Process.__init__(self)
-		self.sandbox = get_sandbox()
-		self.builtins = dbpybuiltins.get_builtins(sandbox=self.sandbox,**kwargs)
-		self.code = code
-		self.timeout = timeout
-		self.error = None
-		
-	def run(self):
-		
-		try:
-			self.sandbox._call(pysandbox.sandbox_class._call_exec, (self.code,self.builtins,None), {})
-			#exec self.code in self.builtins,{}
-		
-		except Exception as e:
-			sys.stderr.write('exception in thread')
-			self.error = e
+			#finishing up
+			try:
+				self.locker.close_all()
+				
+				session_header = self.session.get_header()
+				sys.stderr.write('Session header: '+str(session_header))
+				if session_header:
+					self.response.set_header(*self.session.get_header())
+
+			except Exception as e:
+				#an issue releasing resources
+				if not self.error:
+					self.error = e
+				
+			if self.error:
+				self.error_traceback = traceback.format_exc()
+
 
 def get_sandbox():
 	sandbox_config = pysandbox.SandboxConfig()
@@ -121,7 +122,6 @@ def get_sandbox():
 	sandbox_config.timeout = None
 	
 
-	
 	sandbox = pysandbox.Sandbox(sandbox_config)
 	return sandbox		
 		
@@ -131,10 +131,35 @@ def execute(filestring,**kwargs):
 	
 	PRINT_EXCEPTIONS = True
 	EXEC_TIMEOUT = 15
+	DEBUG = True
+	
+	response = ResponseObject(None,"")
+	
+	sandbox = get_sandbox()
 	
 	
-	sandbox = get_sandbox()	
-	builtin_dict = dbpybuiltins.get_builtins(sandbox=sandbox,**kwargs)
+	locker = dbapiio.DropboxFileLocker(kwargs['client'])
+	
+	request = kwargs['request']
+	
+	for k in request.headers:
+		sys.stderr.write('header key:%s\n'%k)
+	
+
+	cookie = request.headers.get('Cookie',None)
+	
+	sys.stderr.write("cookie:%s\n"%str(cookie))
+	session = sessions.DrapacheSession(cookie)
+	
+	builtin_params = dict(
+							response=response,
+							locker=locker,
+							sandbox=sandbox,
+							session=session,
+							**kwargs
+							)
+							
+	builtin_dict = dbpybuiltins.get_builtins(**builtin_params)
 	
 	old_stdout = sys.stdout
 	new_stdout = StringIO.StringIO()
@@ -146,51 +171,27 @@ def execute(filestring,**kwargs):
 		#sandbox._call(pysandbox.sandbox_class._call_exec, (filestring,builtin_dict,None),{})
 
 		#trying the kill here
-		USE = 'thread'
+		sandbox_thread = DBPYExecThread(sandbox,builtin_dict,locker,session,response,filestring,EXEC_TIMEOUT)
+		sandbox_thread.start()
+	
+		tid = sandbox_thread.ident
+	
+		sandbox_thread.join(EXEC_TIMEOUT)
+	
+		if sandbox_thread.isAlive():
+			#time to kill it
+			#for protection in reversed(sandbox.protections):
+			#	protection.disable(sandbox)
 		
-		if USE == 'thread':
-			sys.stderr.write("starting run exec thread\n")
-			sandbox_thread = DBPYExecThread(sandbox,builtin_dict,filestring,EXEC_TIMEOUT)
-			sandbox_thread.start()
+			sandbox_thread.kill()
+			sandbox_thread.join()
 		
-			tid = sandbox_thread.ident
-		
-			sandbox_thread.join(EXEC_TIMEOUT)
-		
-			if sandbox_thread.isAlive():
-				#time to kill it
-				#for protection in reversed(sandbox.protections):
-				#	protection.disable(sandbox)
+		if sandbox_thread.error is not None:
 			
-				sandbox_thread.kill()
-				sandbox_thread.join()
+			if DEBUG:
+				sys.stdout.write(sandbox_thread.error_traceback)
 			
-			if sandbox_thread.error is not None:
-				raise sandbox_thread.error
-					
-		elif USE == 'process':
-			sys.stderr.write("starting run exec procss\n")
-			sandbox_process = DBPYExecProcess(kwargs,filestring,EXEC_TIMEOUT)
-			sandbox_process.start()
-			
-			pid = sandbox_process.pid
-			
-			sandbox_process.join(EXEC_TIMEOUT)
-			
-			if sandbox_process.is_alive():
-				#time to kill it
-				#for protection in reversed(sandbox.protections):
-				#	proctection.disable(sandbox)
-					
-				sandbox_process.terminate()
-				sandbox_process.join()
-				
-				if sandbox_process.error is not Noen:
-					raise sandbox_process.error
-					
-		elif USE == 'single':
-			
-			exec filestring in builtin_dict,{}
+			raise sandbox_thread.error
 
 	except:
 		if PRINT_EXCEPTIONS:
@@ -201,9 +202,14 @@ def execute(filestring,**kwargs):
 
 	sys.stdout = old_stdout
 	
-	sys.stderr.write("done run exec thread\n")
-	sys.stderr.write("donthread: %s"%str(threading.enumerate()))
-	return ResponseObject(200,new_stdout.getvalue(),{'Content-type':'text/html'})
+	response.body = new_stdout.getvalue()
+
+	if response.status is None:
+		response.status = 200
+		
+	response.set_header('Content-Type','text/html')
+	
+	return response
 	
 	
 	

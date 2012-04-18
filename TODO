@@ -19,7 +19,7 @@ Things that can be done from here:
 	- render_template_to_string
 	- load_file_to_json (or something like)
 	- read_file
-	- get_url(url,with_params={key:values})?
+	- get_url(url,with_params={key:values})? or maybe requests
 	
 	- open_file_for_writing <--- tricky implementation, I have an idea how to do it in a concurrency-safe way, and it's coming soon
 	- load_file_to_json_for_writing (or maybe both json are one function... have to think about this)

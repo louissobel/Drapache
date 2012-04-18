@@ -9,6 +9,8 @@ import os
 import sys
 import urlparse
 
+import util
+
 import dbapiserver
 
 import subdomain_managers
@@ -33,20 +35,33 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		
 		
 		try:
+			
+			request = util.RequestObject()
+			
+			
 			host_string = self.headers.get("Host")
 			host_rest = host_string.split(".",1) #at most one split
 			if len(host_rest) == 1:
 				subdomain = None
 			else:
 				subdomain = host_rest[0]
+				
+			request.subdomain = subdomain
+			request.headers = self.headers
 		
+		
+			sys.stderr.write('here\n')
 		
 			path,query_string = self.parse_raw_path(self.path)
 		
 			if query_string is not None:
-				query_dict = urlparse.parse_qs(query_string)
+				get_params = urlparse.parse_qs(query_string)
 			else:
-				query_dict = None
+				get_params = None
+		
+			request.folder = path.rsplit('/',1)[0] + '/'
+			request.get_params = get_params
+			request.query_string = query_string
 		
 			if subdomain is None:
 				self.send_error(400,"Dropache requires a username as the route")
@@ -75,11 +90,13 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			
 			subdomain_client = self.server.get_dropbox_client(subdomain_token)
 		
-			file_server = dbapiserver.FileServer(subdomain_client,query_dict,query_string)
+			sys.stderr.write('here2\n')
+			file_server = dbapiserver.FileServer(subdomain_client,request)
 		
 			response = file_server.serve(path)
 			
 			if response.error:
+				sys.stderr.write('here-error\n')
 				self.send_error(response.status,response.body)
 				return None
 		
@@ -116,7 +133,7 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		return sub_path,query
 		
 		
-class DropboxMultiThreadHTTPServer(SocketServer.ForkingMixIn,BaseHTTPServer.HTTPServer):
+class DropboxForkingHTTPServer(SocketServer.ForkingMixIn,BaseHTTPServer.HTTPServer):
 	
 	def set_config(self,subdomain_manager_factory,dropbox_client_factory):
 		self.get_subdomain_manager = subdomain_manager_factory

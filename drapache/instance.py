@@ -1,4 +1,4 @@
-from httpserver import DropboxMultiThreadHTTPServer,DropboxHTTPRequestHandler
+from httpserver import DropboxForkingHTTPServer,DropboxHTTPRequestHandler
 
 class Drapache:
 	
@@ -16,7 +16,7 @@ class Drapache:
 		
 		
 		server_address = ('0.0.0.0',self.port)
-		self.httpd = DropboxMultiThreadHTTPServer(server_address,DropboxHTTPRequestHandler)
+		self.httpd = DropboxForkingHTTPServer(server_address,DropboxHTTPRequestHandler)
 		self.httpd.set_config(self.subdomain_manager_factory,self.dropbox_client_factory)
 		self.httpd.serve_forever()
 		

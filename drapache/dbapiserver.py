@@ -10,6 +10,9 @@ from util import ResponseObject,DropacheException
 import os.path
 import re
 
+
+
+
 #for dev
 import pprint
 #
@@ -24,10 +27,9 @@ class FileServer:
 	"""
 	
 	
-	def __init__(self,client,get_params,query_string):
+	def __init__(self,client,request):
 		self.client = client
-		self.get_params = get_params
-		self.query_string = query_string
+		self.request = request
 		
 	def serve(self,path):
 		"""
@@ -39,6 +41,12 @@ class FileServer:
 		- if it is a directory without a trailing slash,
 			returns a redirect request (these will also be able to come fro)
 		"""
+		
+		path_components = path.split('/')
+		for component in path_components:
+			if component.startswith('_'):
+				return ResponseObject(403,'Forbidden',error=True)
+		
 		
 		try:
 			meta_info = self.client.metadata(path)
@@ -56,9 +64,9 @@ class FileServer:
 				if not path.endswith('/'):
 					redirect_location = path+'/'
 					if self.query_string:
-						redirect_location += '?'+self.query_string
+						redirect_location += '?'+self.request.query_string
 						
-					return ResponseObject(301,'redirect',{'Location':redirect_location})
+					return ResponseObject(301,'redirect',headers={'Location':redirect_location})
 				else:
 					return self._find_and_serve_index(meta_info,path)
 			
@@ -102,7 +110,7 @@ class FileServer:
 		
 		param_dict = {}
 		param_dict['client'] = self.client
-		param_dict['get_params'] = self.get_params
+		param_dict['request'] = self.request
 		
 		return dbpyexecute.execute(f,**param_dict)
 	
