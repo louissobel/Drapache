@@ -63,7 +63,7 @@ class FileServer:
 				#first check if it doesn't end with a slash
 				if not path.endswith('/'):
 					redirect_location = path+'/'
-					if self.query_string:
+					if self.request.query_string:
 						redirect_location += '?'+self.request.query_string
 						
 					return ResponseObject(301,'redirect',headers={'Location':redirect_location})

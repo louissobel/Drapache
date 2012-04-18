@@ -17,6 +17,8 @@ import re
 import dropbox
 
 import os.path
+
+import markdown
 	
 import StringIO
 
@@ -229,6 +231,27 @@ def get_builtins(**kwargs):
 	@register
 	def destroy_session():
 		session.destroy()
+		
+	@register
+	def set_response_header(key,value):
+		response.set_header(key,value)
+	
+	@register
+	def set_response_status(status):
+		response.status = status
+		
+	@register
+	def redirect(where,immediately=True):
+		set_response_status(302)
+		set_response_header('Location',where)
+		
+		if immediately:
+			die("redirecting")
+			
+			
+	@register
+	def markdown_to_html(markdown_string):
+		return markdown.markdown(markdown_string)
 		
 	@register
 	def pretty_print(thingy,pre=True):
