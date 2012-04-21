@@ -13,6 +13,7 @@ import util
 
 import dbapiserver
 
+import traceback
 import subdomain_managers
 
 
@@ -98,6 +99,10 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				return None
 		
 			else:
+				#debug
+				sys.stderr.write('memorview:%s\n'%str(memoryview))
+				sys.stderr.write('dir:%s\n'%str(len(sys._getframe().f_builtins)))
+				sys.stderr.write('inside of my HTTPSERVER, here are by builtins:%d\n'%len(__builtins__.keys()))
 				self.send_response(response.status)
 				for h,v in response.headers.items():
 					self.send_header(h,v)
@@ -106,6 +111,8 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				return None
 		
 		except Exception as e:
+			sys.stderr.write('Error in do get:\n')
+			traceback.print_exc()
 			self.send_error(500,str(e))
 		
 		
@@ -141,6 +148,7 @@ class DropboxForkingHTTPServer(SocketServer.ForkingMixIn,BaseHTTPServer.HTTPServ
 		try:
 			BaseHTTPServer.HTTPServer.finish_request(self,*args,**kwargs)
 		except Exception as e:
+			traceback.print_exc()
 			sys.stderr.write("[error] Uncought response exception: %s\n"%str(e))
 
 	

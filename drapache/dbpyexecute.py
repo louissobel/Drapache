@@ -11,6 +11,8 @@ import threading
 import ctypes
 import trace
 
+import __builtin__
+
 import multiprocessing
 
 import sessions
@@ -80,19 +82,65 @@ class DBPYExecThread(KThread):
 		
 	def run(self):
 		
+		traceback.print_stack()
+		
 		try:
-			#manually turning on the sandbox protections
-			for protection in self.sandbox.protections:
-				protection.enable(self.sandbox)
-				
+			
+			#enable for the builtin protection grabs the frame 2 up from enable
+			#i want it to enable the protections with outer_wrapper, which is now privileged
+			#this ensures that privileged builtins are restored in the next disable
+			#so instead of this acting the register frame, I wrap it in a function
+			#so it acts on outer_wrapper
+			def enable_protections():
+				for protection in self.sandbox.protections:
+					protection.enable(self.sandbox)
+			enable_protections()
+
+
 			exec self.code in self.builtins
 		
 		except Exception as e:			
 			self.error = e
 			
 		finally:
+			
+			#before I disable protections and restore privileged builtins,
+			#i need to change the frame that I am acting on to the current one
+			#instead of whatever frame enable was called in
+			#find the builrin protection and set its frame
 			for protection in reversed(self.sandbox.protections):
+				if protection.__class__.__name__ == 'CleanupBuiltins':
+					protection.frame = sys._getframe()
 				protection.disable(self.sandbox)
+			
+			sys.stderr.write('unrolled %d many modules\n'%len(sys.modules))
+			
+
+			
+			t = memoryview('curl')
+			sys.stderr.write("here, the error is %s\n"%(str(self.error)))
+			
+			builtins_set = set(__builtins__.keys())
+			frame_set = set(sys._getframe().f_builtins.keys())
+			
+			difference = builtins_set ^ frame_set
+			
+			sys.stderr.write('the difference\n%s\n'%str(difference))
+			
+			sys.stderr.write("FLIJL"+str(__builtins__)+'\n')
+			sys.stderr.write(str(len(sys._getframe().f_builtins)))
+			
+			sys.stderr.write('climbing up the frames:\n')
+			
+			ok = True
+			level = 0
+			while ok:
+				try:
+					f = sys._getframe(level)
+					sys.stderr.write('%d\n'%len(f.f_builtins.keys()))
+				except ValueError:
+					ok = False
+				level += 1
 			
 			#finishing up
 			try:
@@ -207,5 +255,100 @@ def execute(filestring,**kwargs):
 	
 	return response
 	
+
+
+
+def bug_reproduce_builtins(sandbox):
+	
+	built_in_hash = {}
+	
+	def register(function):
+
+
+		def outer_wrapper(*args,**kwargs):
+            
+			retval = None
+			try:
+			    for p in reversed(sandbox.protections):
+				    p.disable(sandbox)
+			
+			    retval = function(*args,**kwargs)
+			
+			
+			finally:
+		        #redo the protection
+				for p in sandbox.protections:
+					p.enable(sandbox)
+				
+			return retval
+		
+		
+		built_in_hash[function.func_name] = outer_wrapper
+		return function
+		
+	def register2():
+
+		def reg(function):
+			register(function)
+			bar = built_in_hash[function.func_name]
+			def doit():
+				bar()
+			built_in_hash[function.func_name] = doit
+			return doit
+
+		return reg
+		
+		
+	@register2()
+	def foo():
+		sys.stderr.write('LALALA\n')
+		traceback.print_stack()
+		if __name__ == '__main__':
+			sys.stderr.write('main\n')
+		sys.stderr.write('hey there!\n')
+		
+	return built_in_hash
+	
+class BugThread(threading.Thread):
+	
+	def __init__(self,sandbox,string,builtins):
+		threading.Thread.__init__(self)
+		self.sandbox = sandbox
+		self.string = string
+		self.builtins = builtins
+		
+		
+	def run(self):
+		
+		try:
+			#manually turning on the sandbox protections
+			for protection in self.sandbox.protections:
+				protection.enable(self.sandbox)
+				
+			exec self.code in self.builtins
+		
+		except Exception as e:			
+			self.error = e
+			
+		finally:
+			for protection in reversed(self.sandbox.protections):
+				protection.disable(self.sandbox)
+		
+		
+		
+		
+		
+def bug_reproduce():
+	
+	sandbox = get_sandbox()
 	
 	
+	t = BugThread(sandbox,"foo()",bug_reproduce_builtins(sandbox))
+	t.start()
+			
+	sys.stderr.write('builtin count:%d\n'%len(__builtins__.__dict__))
+	sys.stderr.write('framebuiltin count:%d\n'%len(sys._getframe().f_builtins))
+		
+	
+if __name__ == "__main__":
+	bug_reproduce()

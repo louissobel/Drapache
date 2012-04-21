@@ -6,6 +6,7 @@ import dbapijinja
 import dbapiio
 
 import sys
+import imp
 import signal
 import time
 from time import strptime
@@ -63,25 +64,94 @@ def get_builtins(**kwargs):
 		def outer_wrapper(*args,**kwargs):
             
 			retval = None
-			try:
-			    for p in reversed(sandbox.protections):
-				    p.disable(sandbox)
+
+
 			
-			    retval = function(*args,**kwargs)
+			try:
+				#before I disable protections and restore privileged builtins,
+				#i need to change the frame that I am acting on to the current one
+				#instead of whatever frame enable was called in
+				#find the builrin protection and set its frame
+				for p in reversed(sandbox.protections):
+					if p.__class__.__name__ == 'CleanupBuiltins':
+						p.frame = sys._getframe()
+					p.disable(sandbox)
+			
+				sys.stderr.write('RIGHTHERE'+str(open)+'\n')
+				retval = function(*args,**kwargs)
 			
 			
 			finally:
 		        #redo the protection
-				for p in sandbox.protections:
-					p.enable(sandbox)
+				sys.stderr.write('rolling with modules:%s\n'%str(len(sys.modules)))
+				
+				#enable for the builtin protection grabs the frame 2 up from enable
+				#i want it to enable the protections with outer_wrapper, which is now privileged
+				#this ensures that privileged builtins are restored in the next disable
+				#so instead of this acting the register frame, I wrap it in a function
+				#so it acts on outer_wrapper
+				def enable_protections():
+					for p in sandbox.protections:
+						p.enable(sandbox)
+				enable_protections()
 				
 			return retval
 		
 		
 		built_in_hash[function.func_name] = outer_wrapper
 		return function
-			
 		
+	def register2():
+		
+		def reg(function):
+			register(function)
+			bar = built_in_hash[function.func_name]
+			def doit():
+				bar()
+			built_in_hash[function.func_name] = doit
+			return doit
+		
+		return reg
+			
+	
+	def register_with_postop(postop):
+		
+		#postop will happen in a protected environment again
+		
+		def register2(function):
+			
+			def outer_wrapper(*args,**kwargs):
+
+				retval = None
+				exception_occured = False
+				try:
+					old_modules = sandbox.protections[1].modules_dict
+					old_builtins = sandbox.protections[1].builtin_dict
+					for p in reversed(sandbox.protections):
+						p.disable(sandbox)
+
+					retval = function(*args,**kwargs)
+					
+					sys.stderr.write('just called function itself\n')
+					
+				finally:
+			        #redo the protection
+					sys.stderr.write('unrolling (postop) with modules:%s\n'%str(len(sys.modules)))
+					for p in sandbox.protections:
+						p.enable(sandbox)
+				
+				#we only get here if there isn't an exception
+				return postop(retval)
+				
+				
+			
+			built_in_hash[function.func_name] = outer_wrapper
+			
+			return function
+		
+		return register2
+			
+				
 		
 		
 	@register
@@ -127,7 +197,7 @@ def get_builtins(**kwargs):
 				
 		if to == 'read':
 			try:
-				out_file = dbapiio.ReadableDropboxFile(path)
+				out_file = dbapiio.ReadableDropboxFile(path,client)
 			except IOError:
 				raise IOError('unable to open file %s for reading'%path)
 			
@@ -158,7 +228,7 @@ def get_builtins(**kwargs):
 		
 	@register
 	def open_json(path,from_data=None,timeout=None,default=dict):
-		#opens up a json file.
+		#opens up a json file handle of sorts
 		#it will be backed by a WritableDropboxFile
 		
 		out_json = None	
@@ -221,7 +291,7 @@ def get_builtins(**kwargs):
 	@register
 	def start_session():
 		session.start()
-		globals()['SESSION'] = session.inner_dict
+		built_in_hash['SESSION'] = session.inner_dict
 		
 	@register
 	def destroy_session():
@@ -257,6 +327,36 @@ def get_builtins(**kwargs):
 		printer = pprint.PrettyPrinter(indent=4)
 		printer.pprint(thingy)
 		print "</pre>"
+		
+	
+	
+	def dropbox_import_postop(imports):
+		#hm... unfortunately, if any of the imports mutate builtins, then they call suffer
+		#so should I call it for each?
+		#thats the reasoning behind it. I'd love if I didn't have to
+		for module_string,module in imports:
+			builtins = get_builtins(**kwargs)
+			exec module_string in builtins,module.__dict__
+	
+	
+	@register_with_postop(dropbox_import_postop)
+	def dropbox_import(*module_paths):
+		#look first in the path given by folder search
+		#then look in a '/_scripts' folder? or similarly named?
+		#not right now
+		
+		#NO PACKAGE SUPPORT... SIMPLE FILES ONLY
+		items = []
+		for module_path in module_paths:
+			filestring = read_file(module_path)
+			module_name = os.path.basename(module_path).split('.',1)[0]
+			sys.stderr.write('making module iwth name %s\n'%module_name)
+			out_module = imp.new_module(module_name)
+			built_in_hash[module_name] = out_module
+			items.append( (filestring,out_module) )
+		
+		return items
+		
 	    
 	    
 	@register
@@ -265,11 +365,6 @@ def get_builtins(**kwargs):
 		Raises an Exception
 		"""
 		raise Exception(message)
-		
-		
-	@register
-	def namespace_inject(k,v):
-		globals()['k'] = v
 		
 	
 	
