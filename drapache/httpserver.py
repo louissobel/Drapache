@@ -8,6 +8,7 @@ import re
 import os
 import sys
 import urlparse
+import cgi
 
 import util
 
@@ -33,8 +34,13 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		#print self.request.settimeout(5)
 	
 	def do_GET(self):
+		return self.serve(method='get')
 		
-		
+	def do_POST(self):
+		return self.serve(method='post')
+	
+	def serve(self,method=None):
+			
 		try:
 			
 			request = util.RequestObject()
@@ -90,8 +96,18 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			
 			subdomain_client = self.server.get_dropbox_client(subdomain_token)
 		
-			file_server = dbapiserver.FileServer(subdomain_client,request)
 		
+			#post param checking
+			if method == 'post':
+				request_length = int(self.headers.get('Content-length',0))
+				foo = self.rfile.read(request_length)
+				post_params = urlparse.parse_qs(foo)
+				request.post_params = post_params
+			else:
+				request.post_params = None
+		
+		
+			file_server = dbapiserver.FileServer(subdomain_client,request)
 			response = file_server.serve(path)
 			
 			if response.error:
@@ -99,10 +115,6 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				return None
 		
 			else:
-				#debug
-				sys.stderr.write('memorview:%s\n'%str(memoryview))
-				sys.stderr.write('dir:%s\n'%str(len(sys._getframe().f_builtins)))
-				sys.stderr.write('inside of my HTTPSERVER, here are by builtins:%d\n'%len(__builtins__.keys()))
 				self.send_response(response.status)
 				for h,v in response.headers.items():
 					self.send_header(h,v)
@@ -111,7 +123,6 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				return None
 		
 		except Exception as e:
-			sys.stderr.write('Error in do get:\n')
 			traceback.print_exc()
 			self.send_error(500,str(e))
 		

@@ -20,11 +20,10 @@ def get_index_file(file_list,folder_path,client):
 			file_name = file_name + '/'
 		files.append(file_name)
 		
-	dropbox_env = jinja2.Environment(loader=dbapijinja.DropboxLoader(client,'/_templates'))
+	dropbox_env = jinja2.Environment(loader=dbapijinja.DropboxLoader(client,'/_templates/'))
 	
 	try:
 		custom_index_template = dropbox_env.get_template('index.html')
-		print 'hh'
 		return custom_index_template.render(files=files,path=folder_path)
 	
 	except jinja2.TemplateNotFound:
