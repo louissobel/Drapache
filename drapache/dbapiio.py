@@ -36,6 +36,11 @@ class ReadableDropboxFile(StringIO.StringIO):
 
 
 class LiveDropboxFile(StringIO.StringIO):
+	"""
+	An in-memory file object representing a dropbox file
+	It is 'live' in the sense that it once it is closed, all changes made are 
+	reflected to dropbox. So it's not really live, but under sufficient pre-conditions
+	(locking the file) it will be. A leaky abstraction I guess."""
 	
 	def __init__(self,path,client,download=True):
 		
@@ -50,22 +55,25 @@ class LiveDropboxFile(StringIO.StringIO):
 		else:
 			StringIO.StringIO.__init__(self)
 		
+		
+	def is_open(self):
+		return self.__open
+	
 	def _update(self,client):
 
 		if self.__open:
 			self.seek(0)
 			client.put_file(self.path,self,overwrite=True)
 
-	def close(self,locker=None):
+	def _close(self,locker):
 
 		if self.__open:
 
-			if locker is not None:
-				try:
-					self._update(locker.client)
-				finally:
-					locker.release(self.path)
-					self.__open = False
+			try:
+				self._update(locker.client)
+			finally:
+				locker.release(self.path)
+				self.__open = False
 		else:
 			pass
 			#this allows for mutliple accidental callings .close()
@@ -75,11 +83,11 @@ class WritableDropboxFile(LiveDropboxFile):
 	
 	def __init__(self,path,client,download=True,mode='append'):
 		#mode is either write or append
-		#if append, we have to download if download is true
+		#if append, we have to download if download is true, which generally will
+		#be set by the caller to True only if the file exists
 		#so we only have to download the file if download is true and the mode is append
-		
 		do_download = (download and mode == 'append')
-		LiveDropboxFile.__init__(self,path,client,do_download,mode)
+		LiveDropboxFile.__init__(self,path,client,do_download)
 		if mode == 'append':
 			self.seek(0,2)
 			
@@ -95,7 +103,7 @@ class WritableDropboxFile(LiveDropboxFile):
 			
 	def write(self,what):
 		
-		if not self.__open:
+		if not self.is_open():
 			raise IOError('Cannot write to a closed file')
 			
 		if self.mode == 'append':
@@ -107,7 +115,7 @@ class WritableDropboxFile(LiveDropboxFile):
 		
 	def writelines(self,sequence):
 		
-		if not self.__open:
+		if not self.is_open():
 			raise IOError('Cannot write to a closed file!')
 		
 		if self.mode == 'append':
@@ -134,7 +142,7 @@ class JSONDropboxFile(LiveDropboxFile):
 		self.seek(0)
 		
 		try:
-			json.dump(self.json_object,self)
+			json.dump(self.json_object,self,indent=4)
 			self.truncate()
 		except TypeError:
 			self.seek(0)
@@ -223,7 +231,7 @@ class DropboxFileLocker:
 			flag_list.sort()
 
 			if not flag_list:
-				raise AssertionError('There should not be an empty list of flags at this point')
+				raise IOError('There should not be an empty list of flags at this point')
 
 			first_uid = flag_list[0][1]
 
@@ -261,7 +269,7 @@ class DropboxFileLocker:
 
 	def close_all(self,):
 		for file_h in self.open_files:
-			file_h.close(locker=self)
+			file_h._close(self)
 			
 	def register_open_file(self,file_h):
 		self.open_files.append(file_h)

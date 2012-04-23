@@ -97,6 +97,9 @@ class FileServer:
 		"""
 		path = file_meta['path']
 		f = self.client.get_file(path).read()
+		if f.startswith('#DBPYEXECUTE'):
+			param_dict = dict(client=self.client,request=self.request)
+			return dbpyexecute.execute(f,**param_dict)
 		headers = {'Content-type':self._get_content_type(file_meta)}
 		return ResponseObject(200,f,headers)
 		
@@ -108,11 +111,10 @@ class FileServer:
 			#allows these files to be shared without getting executed
 			headers = {'Content-type':'text/plain'}
 			return ResponseObject(200,f,headers)
-			
 		
 		param_dict = dict(client=self.client,request=self.request)
-		
 		return dbpyexecute.execute(f,**param_dict)
+
 	
 	def _find_and_serve_index(self,directory_meta,path):
 		"""

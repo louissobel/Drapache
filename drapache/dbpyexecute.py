@@ -82,8 +82,6 @@ class DBPYExecThread(KThread):
 		
 	def run(self):
 		
-		traceback.print_stack()
-		
 		try:
 			
 			#enable for the builtin protection grabs the frame 2 up from enable
@@ -99,6 +97,9 @@ class DBPYExecThread(KThread):
 
 			exec self.code in self.builtins
 		
+		except dbpybuiltins.UserDieException:
+			pass
+		
 		except Exception as e:			
 			self.error = e
 			
@@ -112,35 +113,7 @@ class DBPYExecThread(KThread):
 				if protection.__class__.__name__ == 'CleanupBuiltins':
 					protection.frame = sys._getframe()
 				protection.disable(self.sandbox)
-			
-			sys.stderr.write('unrolled %d many modules\n'%len(sys.modules))
-			
 
-			
-			t = memoryview('curl')
-			sys.stderr.write("here, the error is %s\n"%(str(self.error)))
-			
-			builtins_set = set(__builtins__.keys())
-			frame_set = set(sys._getframe().f_builtins.keys())
-			
-			difference = builtins_set ^ frame_set
-			
-			sys.stderr.write('the difference\n%s\n'%str(difference))
-			
-			sys.stderr.write("FLIJL"+str(__builtins__)+'\n')
-			sys.stderr.write(str(len(sys._getframe().f_builtins)))
-			
-			sys.stderr.write('climbing up the frames:\n')
-			
-			ok = True
-			level = 0
-			while ok:
-				try:
-					f = sys._getframe(level)
-					sys.stderr.write('%d\n'%len(f.f_builtins.keys()))
-				except ValueError:
-					ok = False
-				level += 1
 			
 			#finishing up
 			try:
@@ -165,6 +138,7 @@ def get_sandbox():
 	sandbox_config.enable("time")
 	sandbox_config.enable("math")
 	sandbox_config.enable("exit")
+	sandbox_config.enable("stderr")
 	
 	
 	sandbox_config.timeout = None
@@ -178,7 +152,7 @@ def execute(filestring,**kwargs):
 	
 	
 	PRINT_EXCEPTIONS = True
-	EXEC_TIMEOUT = 15
+	EXEC_TIMEOUT = 25
 	DEBUG = True
 	
 	response = ResponseObject(None,"")
@@ -250,8 +224,9 @@ def execute(filestring,**kwargs):
 
 	if response.status is None:
 		response.status = 200
-		
-	response.set_header('Content-Type','text/html')
+	
+	if not 'Content-Type' in response.headers:
+		response.set_header('Content-Type','text/html')
 	
 	return response
 	
