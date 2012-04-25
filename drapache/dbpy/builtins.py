@@ -2,29 +2,18 @@
 Here are the functions that will ship with python executable code
 """
 
-import dbapijinja
-import dbapiio
 
 import sys
 import imp
-import signal
-import time
-from time import strptime
+import os.path
 import pprint
 
-import uuid
-import re
-
 import dropbox
-
-import os.path
-
 import markdown
 import json
 	
-import StringIO
-
-from functools import wraps
+import dbapi.jinja
+import dbapi.io
 
 class UserDieException(Exception):
 	pass
@@ -152,7 +141,7 @@ def get_builtins(**kwargs):
 	####### Template stuff
 	@privileged
 	def _render_template_to_string(path,with_data):
-		return dbapijinja.render_dropbox_template(client,path,with_data)
+		return dbapi.jinja.render_dropbox_template(client,path,with_data)
 	
 	@register
 	def render_template(path,with_data=None,search_root="/_templates"):
@@ -178,9 +167,9 @@ def get_builtins(**kwargs):
 				check_path = prefix + path
 				try:
 					return _render_template_to_string(check_path,with_data)
-				except dbapijinja.TemplateNotFound:
+				except dbapi.jinja.TemplateNotFound:
 					pass
-			raise dbapijinja.TemplateNotFound()
+			raise dbapi.jinja.TemplateNotFound()
 		
 	
 	################### file io stuff
@@ -215,7 +204,7 @@ def get_builtins(**kwargs):
 				
 		if to == 'read':
 			try:
-				out_file = dbapiio.ReadableDropboxFile(path,client)
+				out_file = dbapi.io.ReadableDropboxFile(path,client)
 			except IOError:
 				raise IOError('unable to open file %s for reading'%path)
 			
@@ -230,9 +219,9 @@ def get_builtins(**kwargs):
 			download = file_exists and allow_download
 			try:
 				if to == 'json':
-					out_file = dbapiio.JSONDropboxFile(path,client,download=download)
+					out_file = dbapi.io.JSONDropboxFile(path,client,download=download)
 				else:
-					out_file = dbapiio.WritableDropboxFile(path,client,download=download,mode=to)
+					out_file = dbapi.io.WritableDropboxFile(path,client,download=download,mode=to)
 			except IOError as e:
 				raise IOError('Unable to open file for writing ')
 				

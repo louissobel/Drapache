@@ -4,24 +4,16 @@ responsible for executing downloaded code
 
 import StringIO
 import sys
-import traceback
-
-
+import tracebackm
 import threading
-import ctypes
 import trace
 
-import __builtin__
+import pysandbox
 
-import multiprocessing
-
-import sessions
-
-import sandbox as pysandbox
-from util import ResponseObject
-import dbpybuiltins
-
-import dbapiio
+import util.sessions
+from util.http import ResponseObject
+import dbpy.builtins
+import dbapi.io
 
 class Timeout(Exception):
 	pass
@@ -97,7 +89,7 @@ class DBPYExecThread(KThread):
 
 			exec self.code in self.builtins
 		
-		except dbpybuiltins.UserDieException:
+		except dbpy.builtins.UserDieException:
 			pass
 		
 		except Exception as e:			
@@ -116,15 +108,21 @@ class DBPYExecThread(KThread):
 
 			
 			#finishing up
+			#resource releasing (post-execution actions)
+			#are registered here
 			try:
+				#releasing all open files
 				self.locker.close_all()
-
+				
+				#setting the session cookie if necessary
 				session_header = self.session.get_header()
 				if session_header:
 					self.response.set_header(*self.session.get_header())
 
 			except Exception as e:
 				#an issue releasing resources
+				#if there is already an error, we do not report it?
+				#maybe errors releasing resources should have higher precedence..
 				if not self.error:
 					self.error = e
 				
@@ -138,12 +136,9 @@ def get_sandbox():
 	sandbox_config.enable("time")
 	sandbox_config.enable("math")
 	sandbox_config.enable("exit")
-	sandbox_config.enable("stderr")
-	
 	
 	sandbox_config.timeout = None
 	
-
 	sandbox = pysandbox.Sandbox(sandbox_config)
 	return sandbox		
 		
@@ -159,15 +154,12 @@ def execute(filestring,**kwargs):
 	
 	sandbox = get_sandbox()
 	
-	
-	locker = dbapiio.DropboxFileLocker(kwargs['client'])
-	
+	#setting up the parameters for the builtin construction
+	locker = dbapi.io.DropboxFileLocker(kwargs['client'])
 	request = kwargs['request']
 	
-
 	cookie = request.headers.get('Cookie',None)
-	
-	session = sessions.DrapacheSession(cookie)
+	session = util.sessions.DrapacheSession(cookie)
 	
 	builtin_params = dict(
 							response=response,
@@ -177,38 +169,33 @@ def execute(filestring,**kwargs):
 							**kwargs
 							)
 							
-	builtin_dict = dbpybuiltins.get_builtins(**builtin_params)
+	builtin_dict = dbpy.builtins.get_builtins(**builtin_params)
 	
+	#replaceing stdout
 	old_stdout = sys.stdout
 	new_stdout = StringIO.StringIO()
-	
 	sys.stdout = new_stdout
 	
 	try:
-		#im passing things to my sandbox in raw...
-		#sandbox._call(pysandbox.sandbox_class._call_exec, (filestring,builtin_dict,None),{})
 
-		#trying the kill here
 		sandbox_thread = DBPYExecThread(sandbox,builtin_dict,locker,session,response,filestring,EXEC_TIMEOUT)
 		sandbox_thread.start()
-	
-		tid = sandbox_thread.ident
 	
 		sandbox_thread.join(EXEC_TIMEOUT)
 	
 		if sandbox_thread.isAlive():
 			#time to kill it
-			#for protection in reversed(sandbox.protections):
-			#	protection.disable(sandbox)
 		
 			sandbox_thread.kill()
 			sandbox_thread.join()
 		
 		if sandbox_thread.error is not None:
 			
+			#this is where processing of the traceback should take place
+			#so that we can show a meaningful error message
 			if DEBUG:
 				sys.stdout.write(sandbox_thread.error_traceback)
-			
+
 			raise sandbox_thread.error
 
 	except:
@@ -219,7 +206,6 @@ def execute(filestring,**kwargs):
 	
 
 	sys.stdout = old_stdout
-	
 	response.body = new_stdout.getvalue()
 
 	if response.status is None:
@@ -229,101 +215,3 @@ def execute(filestring,**kwargs):
 		response.set_header('Content-Type','text/html')
 	
 	return response
-	
-
-
-
-def bug_reproduce_builtins(sandbox):
-	
-	built_in_hash = {}
-	
-	def register(function):
-
-
-		def outer_wrapper(*args,**kwargs):
-            
-			retval = None
-			try:
-			    for p in reversed(sandbox.protections):
-				    p.disable(sandbox)
-			
-			    retval = function(*args,**kwargs)
-			
-			
-			finally:
-		        #redo the protection
-				for p in sandbox.protections:
-					p.enable(sandbox)
-				
-			return retval
-		
-		
-		built_in_hash[function.func_name] = outer_wrapper
-		return function
-		
-	def register2():
-
-		def reg(function):
-			register(function)
-			bar = built_in_hash[function.func_name]
-			def doit():
-				bar()
-			built_in_hash[function.func_name] = doit
-			return doit
-
-		return reg
-		
-		
-	@register2()
-	def foo():
-		sys.stderr.write('LALALA\n')
-		traceback.print_stack()
-		if __name__ == '__main__':
-			sys.stderr.write('main\n')
-		sys.stderr.write('hey there!\n')
-		
-	return built_in_hash
-	
-class BugThread(threading.Thread):
-	
-	def __init__(self,sandbox,string,builtins):
-		threading.Thread.__init__(self)
-		self.sandbox = sandbox
-		self.string = string
-		self.builtins = builtins
-		
-		
-	def run(self):
-		
-		try:
-			#manually turning on the sandbox protections
-			for protection in self.sandbox.protections:
-				protection.enable(self.sandbox)
-				
-			exec self.code in self.builtins
-		
-		except Exception as e:			
-			self.error = e
-			
-		finally:
-			for protection in reversed(self.sandbox.protections):
-				protection.disable(self.sandbox)
-		
-		
-		
-		
-		
-def bug_reproduce():
-	
-	sandbox = get_sandbox()
-	
-	
-	t = BugThread(sandbox,"foo()",bug_reproduce_builtins(sandbox))
-	t.start()
-			
-	sys.stderr.write('builtin count:%d\n'%len(__builtins__.__dict__))
-	sys.stderr.write('framebuiltin count:%d\n'%len(sys._getframe().f_builtins))
-		
-	
-if __name__ == "__main__":
-	bug_reproduce()

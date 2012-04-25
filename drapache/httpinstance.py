@@ -1,6 +1,6 @@
-from httpserver import DropboxForkingHTTPServer,DropboxHTTPRequestHandler
+from frontends.httpserver import DropboxForkingHTTPServer,DropboxHTTPRequestHandler
 
-class Drapache:
+class HttpDrapache:
 	
 	
 	def __init__(self):

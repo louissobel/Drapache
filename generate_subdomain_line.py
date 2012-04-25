@@ -1,7 +1,7 @@
+import sys
+
 import config
 import dropbox
-
-import sys
 
 APP_KEY = config.APP_KEY
 APP_SECRET = config.APP_SECRET

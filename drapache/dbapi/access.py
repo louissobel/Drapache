@@ -1,11 +1,11 @@
 """
 Defines utility classes for connecting to dropbox
+
 """
 
 import dropbox
 
 
-#credentials for Dropaches
 
 
 
@@ -27,3 +27,5 @@ class DropboxClientCreator:
 		return client
 		
 		
+class DropboxClientPool:
+	pass

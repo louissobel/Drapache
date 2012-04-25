@@ -8,14 +8,10 @@ import re
 import os
 import sys
 import urlparse
-import cgi
+import traceback
 
 import util
-
-import dbapiserver
-
-import traceback
-import subdomain_managers
+import dbapi.server
 
 
 
@@ -43,42 +39,51 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			
 		try:
 			
-			request = util.RequestObject()
-			
-			
+			#create an empty request object
+			request = util.http.RequestObject()
+
+			#pulling out the host
 			host_string = self.headers.get("Host")
 			host_rest = host_string.split(".",1) #at most one split
 			if len(host_rest) == 1:
 				subdomain = None
 			else:
 				subdomain = host_rest[0]
-				
+			
+			#setting some request variables
 			request.subdomain = subdomain
 			request.headers = self.headers
 		
-		
-		
+			#pulling out the request path and query from the url
 			path,query_string = self.parse_raw_path(self.path)
 		
+			#parsing the query
 			if query_string is not None:
 				get_params = urlparse.parse_qs(query_string)
 			else:
 				get_params = None
 		
+			#setting more request variables
+			request.path = path
 			request.folder = path.rsplit('/',1)[0] + '/'
 			request.get_params = get_params
 			request.query_string = query_string
 		
+			#there must be a subdomain
 			if subdomain is None:
 				self.send_error(400,"Dropache requires a username as the route")
 				return None
 			
 			
+			#getting a subdomain_manager instance
+			#the factory function is an attribute of the server
+			#to keep it configurable
 			subdomain_manager = self.server.get_subdomain_manager()
 		
+			#looking up the oauth for the given subdomain
 			try:
 				subdomain_exists = subdomain_manager.check_subdomain(subdomain)
-			except subdomain_managers.SubdomainException as e:
+			except util.subdomain_managers.SubdomainException as e:
 				self.send_error(503,"Error in subdomain lookup:\n"+e.message)
 				return None
 		
@@ -87,17 +92,19 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				self.send_error(404,"Subdomain %s does not exist"%subdomain)
 				return None
 			
-			
 			try:
 				subdomain_token = subdomain_manager.get_token(subdomain)
-			except subdomain_managers.SubdomainException as e:
+			except util.subdomain_managers.SubdomainException as e:
 				self.end_error(503,"Error in subdomain lookup:\n"+e.message)
 				return None
 			
+			#getting a dropbox_client
+			#the factory function is an attribute of the server
+			#to keep it configurable
 			subdomain_client = self.server.get_dropbox_client(subdomain_token)
 		
 		
-			#post param checking
+			#parsing post parameters if it is a post request
 			if method == 'post':
 				request_length = int(self.headers.get('Content-length',0))
 				foo = self.rfile.read(request_length)
@@ -106,9 +113,8 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			else:
 				request.post_params = None
 		
-		
-			file_server = dbapiserver.FileServer(subdomain_client,request)
-			response = file_server.serve(path)
+			#getting the response from dropbox
+			response = dbapi.server.FileServer(subdomain_client,request).serve()
 			
 			if response.error:
 				self.send_error(response.status,response.body)
@@ -141,8 +147,6 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			sub_path = '/'
 		if query == '':
 			query = None
-		
-		
 		
 		return sub_path,query
 		

@@ -10,9 +10,9 @@ def run():
 	#where lines are in the format
 	#SUBDOMAIN|OAUTH_TOKEN|OAUTH_TOKENSECRET
 	def subdomain_manager_factory():
-		return drapache.subdomain_managers.FlatFileSubdomainManager(config.SUBDOMAIN_FILE)
+		return drapache.util.subdomain_managers.FlatFileSubdomainManager(config.SUBDOMAIN_FILE)
 		
-	dropbox_client_generator = drapache.dbapiaccess.DropboxClientCreator(config.APP_KEY,config.APP_SECRET)
+	dropbox_client_generator = drapache.dbapi.access.DropboxClientCreator(config.APP_KEY,config.APP_SECRET)
 	def dropbox_client_factory(token_tuple):
 		return dropbox_client_generator.get_client(*token_tuple)
 	

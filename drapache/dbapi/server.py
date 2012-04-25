@@ -1,15 +1,14 @@
 """
 Implements the interaction with the dropbox api
 """
-import dropbox
-
-import dbpyexecute
-import index_generator
-import util
-from util import ResponseObject,DropacheException
 
 import os.path
 import re
+import dropbox
+
+import dbpy.execute
+import util
+import util.http.ResponseObject as ResponseObject
 
 
 
@@ -32,7 +31,7 @@ class FileServer:
 		self.client = client
 		self.request = request
 		
-	def serve(self,path):
+	def serve(self):
 		"""
 		serves the given path, returning a Response Object
 		
@@ -42,6 +41,10 @@ class FileServer:
 		- if it is a directory without a trailing slash,
 			returns a redirect request (these will also be able to come fro)
 		"""
+		
+		request = self.request
+		client = self.client
+		path = request.path
 		
 		#anything prefixed with '_' is not accessable
 		path_components = path.split('/')
@@ -56,7 +59,7 @@ class FileServer:
 			#### checking for the is_Deleted flag
 			try:
 				if meta_info['is_deleted']:
-					raise DropacheException(410,"File is deleted")
+					return ResponseObject(410,"File is deleted",error=True)
 			except KeyError:
 				pass #its not deleted
 			
@@ -65,8 +68,8 @@ class FileServer:
 				#first check if it doesn't end with a slash
 				if not path.endswith('/'):
 					redirect_location = path+'/'
-					if self.request.query_string:
-						redirect_location += '?'+self.request.query_string
+					if request.query_string:
+						redirect_location += '?'+request.query_string
 						
 					return ResponseObject(301,'redirect',headers={'Location':redirect_location})
 				else:
@@ -80,8 +83,6 @@ class FileServer:
 		except dropbox.rest.ErrorResponse as e:
 			return ResponseObject(e.status,e.reason,headers=e.headers,error=True)
 			
-		except DropacheException as e:
-			return ResponseObject(e.status,e.message,error=True)
 			
 	def _serve_file(self,file_meta):
 		#here is where special handling must be invoked
@@ -98,6 +99,7 @@ class FileServer:
 		path = file_meta['path']
 		f = self.client.get_file(path).read()
 		if f.startswith('#DBPYEXECUTE'):
+			#allows arbitrary text files to be run as dbpy code. security risk?
 			param_dict = dict(client=self.client,request=self.request)
 			return dbpyexecute.execute(f,**param_dict)
 		headers = {'Content-type':self._get_content_type(file_meta)}
@@ -149,8 +151,9 @@ class FileServer:
 			if extension in index_paths:
 				return self._serve_file(index_paths[extension])
 			
-		
-		return ResponseObject(200,index_generator.get_index_file(directory_meta['contents'],path,self.client))
+		#there are no index files, so lets return a default one
+		index_file = util.index_generator.get_index_file(directory_meta['contents'],path,self.client)
+		return ResponseObject(200,index_file)
 		
 		
 	def _get_content_type(self,file_meta):
