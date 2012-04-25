@@ -17,12 +17,14 @@ Files that have the extension .dbpy or start with the string "#DBPYEXECUTE" will
 and executed by the Drapache server, returning anything that is printed to standard out to the clients browser.
 
 Although far from finished, the dbpy framework is enough for beginning programmers to get started building dynamic websites.
+Check out [blog.drapache](http://github.com/louissobel/blog.drapache) (on github too) for a blogging system I scraped together that
+runs on drapache and demonstrates what can be done with dbpy.
 
 Misc. Features
 ----------------
-It will create an index for a folder if one doesn't exist, using a template found in Drapache/_templates/
-Files are folders that begin with '_' will not be served, returning instead a 403 Forbidden HTTP response.
-Right now they also show up in an auto-generated index, but that is for debugging purposes and could be easily changed
+It will create an index for a folder if one doesn't exist, using a template found in Drapache/\_templates/
+Files or folders that begin with '_' will not be served, returning instead a 403-Forbidden HTTP response.
+Right now they _do_ show up in an auto-generated index, but that is for debugging purposes and could be easily changed
 
 Technical
 ---------------
@@ -44,8 +46,9 @@ This is the high level life-cycle of a request:
    to the request, response, sessions, templates, and the dropbox file system through the dbpy framework. This thread will be killed by the caller
    after a certain amount of time (right now 25 seconds) and an exception will be raised. Errors in this thread are caught and passed
    back to the caller.
-5. Once the thread either finishes or is killed, stdout is replaced with the real stdout, and the error output or actual output of the
-   dbpy script is passed back to the DropboxServer with a new Response.
+5. Once the thread either finishes or is killed, any clean-up from the dbpy script takes place,
+   the fake stdout is replaced with the real stdout, and the error output or actual output of the
+   dbpy script is passed back to the DropboxServer with any headers and status code of the new Response.
 6. The DropboxServer passes this response back to the frontend, which writes it to the internet.
 
 
@@ -67,5 +70,5 @@ Notes:
 *	add more testing subdomains by repeating step 3 for other subdomains
 *	There are other ways of managing subdomains than a flat file.. look in subdomain_manager.py for the base class
 	and an implementation of managing subdomains with mysql
-*	This will create a folder in your dropbox /Apps folder with the name whatever app you created in step 2, and
+*	This will create a folder in your dropbox /Apps folder with the name of whatever app you created in step 2, and
 	your local instance will serve from that folder, _not_ the Drapache folder that you will get if you sign up through get.drapache
