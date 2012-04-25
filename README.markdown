@@ -28,7 +28,8 @@ Technical
 ---------------
 Working on documenting both the server as well as the dbpy framework.
 
-This is the high level life-cycle of a request
+This is the high level life-cycle of a request:
+
 1. A frontend handles the http request, and creates a Request object. It handles parsing the Host header for the 
    requested subdomain, parsing GET/POST parameters, looking up any dropbox oauth for the requested subdomain,
    and creating a dropbox API client. The frontend passes the request and client off to a DropboxServer.
