@@ -4,16 +4,16 @@ responsible for executing downloaded code
 
 import StringIO
 import sys
-import tracebackm
+import traceback
 import threading
 import trace
 
-import pysandbox
+import sandbox as pysandbox
 
-import util.sessions
-from util.http import ResponseObject
-import dbpy.builtins
-import dbapi.io
+from drapache.util.http import Response
+from drapache import dbapi
+from drapache import util
+import builtins
 
 class Timeout(Exception):
 	pass
@@ -89,7 +89,7 @@ class DBPYExecThread(KThread):
 
 			exec self.code in self.builtins
 		
-		except dbpy.builtins.UserDieException:
+		except builtins.UserDieException:
 			pass
 		
 		except Exception as e:			
@@ -150,7 +150,7 @@ def execute(filestring,**kwargs):
 	EXEC_TIMEOUT = 25
 	DEBUG = True
 	
-	response = ResponseObject(None,"")
+	response = Response(None,"")
 	
 	sandbox = get_sandbox()
 	
@@ -169,7 +169,7 @@ def execute(filestring,**kwargs):
 							**kwargs
 							)
 							
-	builtin_dict = dbpy.builtins.get_builtins(**builtin_params)
+	builtin_dict = builtins.get_builtins(**builtin_params)
 	
 	#replaceing stdout
 	old_stdout = sys.stdout

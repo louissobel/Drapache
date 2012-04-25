@@ -10,8 +10,8 @@ import sys
 import urlparse
 import traceback
 
-import util
-import dbapi.server
+import drapache
+from drapache import util
 
 
 
@@ -40,7 +40,7 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		try:
 			
 			#create an empty request object
-			request = util.http.RequestObject()
+			request = util.http.Request()
 
 			#pulling out the host
 			host_string = self.headers.get("Host")
@@ -82,20 +82,12 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		
 			#looking up the oauth for the given subdomain
 			try:
-				subdomain_exists = subdomain_manager.check_subdomain(subdomain)
+				subdomain_token = subdomain_manager.get_token(subdomain)
+				if subdomain_token is None:
+					self.send_error(404,"Subdomain %s does not exist"%subdomain)
+					return None
 			except util.subdomain_managers.SubdomainException as e:
 				self.send_error(503,"Error in subdomain lookup:\n"+e.message)
-				return None
-		
-		
-			if not subdomain_exists:
-				self.send_error(404,"Subdomain %s does not exist"%subdomain)
-				return None
-			
-			try:
-				subdomain_token = subdomain_manager.get_token(subdomain)
-			except util.subdomain_managers.SubdomainException as e:
-				self.end_error(503,"Error in subdomain lookup:\n"+e.message)
 				return None
 			
 			#getting a dropbox_client
@@ -114,7 +106,7 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				request.post_params = None
 		
 			#getting the response from dropbox
-			response = dbapi.server.FileServer(subdomain_client,request).serve()
+			response = drapache.dbserver.DropboxServer(subdomain_client,request).serve()
 			
 			if response.error:
 				self.send_error(response.status,response.body)
@@ -165,6 +157,27 @@ class DropboxForkingHTTPServer(SocketServer.ForkingMixIn,BaseHTTPServer.HTTPServ
 		except Exception as e:
 			traceback.print_exc()
 			sys.stderr.write("[error] Uncought response exception: %s\n"%str(e))
+			
+			
+class HttpDrapache:
+
+
+	def __init__(self):
+		self.port = None
+		self.subdomain_manager_factory = None
+		self.dropbox_client_factory = None
+
+	def start(self):
+
+		assert self.port
+		assert self.subdomain_manager_factory
+		assert self.dropbox_client_factory
+
+
+		server_address = ('0.0.0.0',self.port)
+		self.httpd = DropboxForkingHTTPServer(server_address,DropboxHTTPRequestHandler)
+		self.httpd.set_config(self.subdomain_manager_factory,self.dropbox_client_factory)
+		self.httpd.serve_forever()
 
 	
 

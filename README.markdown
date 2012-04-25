@@ -21,7 +21,32 @@ Although far from finished, the dbpy framework is enough for beginning programme
 Misc. Features
 ----------------
 It will create an index for a folder if one doesn't exist, using a template found in Drapache/_templates/
-Files are folders that begin with '_' will not be served, returning instead a 403 Forbidded HTTP response.
+Files are folders that begin with '_' will not be served, returning instead a 403 Forbidden HTTP response.
+Right now they also show up in an auto-generated index, but that is for debugging purposes and could be easily changed
+
+Technical
+---------------
+Working on documenting both the server as well as the dbpy framework.
+
+This is the high level life-cycle of a request
+1. A frontend handles the http request, and creates a Request object. It handles parsing the Host header for the 
+   requested subdomain, parsing GET/POST parameters, looking up any dropbox oauth for the requested subdomain,
+   and creating a dropbox API client. The frontend passes the request and client off to a DropboxServer.
+2. The DropboxServer parses the path, and looks up the metainfo for the file requested. If it is a directory, it goes
+   through some logic to create and index page. If it is a file, it downloads it. If it is a static file, it passes it back
+   to the frontend, which writes it to the internet. If it is a dbpy file, it passes it, along the request and client, to
+   dbpy.execute.
+3. dbpy.execute creates a sandbox using the [pysandbox](http://github.com/haypo/pysandbox) module by [haypo](http://github.com/haypo).
+   It creates a number of objects necessary to execute a dbpy file, gets a dictionary of the dbpy built-in functions, and creates
+   a new thread in which to run the downloaded dbpy script. It creates a new, in memory, stdout, and starts the created thread.
+4. This thread activates the sandbox, and calls exec on the downloaded script, capturing any errors. The running script has access
+   to the request, response, sessions, templates, and the dropbox file system through the dbpy framework. This thread will be killed by the caller
+   after a certain amount of time (right now 25 seconds) and an exception will be raised. Errors in this thread are caught and passed
+   back to the caller.
+5. Once the thread either finishes or is killed, stdout is replaced with the real stdout, and the error output or actual output of the
+   dbpy script is passed back to the DropboxServer with a new Response.
+6. The DropboxServer passes this response back to the frontend, which writes it to the internet.
+
 
 Running an instance locally
 ---------------------------

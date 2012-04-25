@@ -14,7 +14,7 @@ import subdomain_managers
 
 import threading
 
-import dbapiserver
+from drapache import server as dropbox_server
 
 from twisted.web import server, resource
 from twisted.internet import threads, reactor, defer

@@ -4,22 +4,16 @@ Implements the interaction with the dropbox api
 
 import os.path
 import re
+
 import dropbox
 
-import dbpy.execute
-import util
-import util.http.ResponseObject as ResponseObject
+from drapache import dbpy
+from drapache import util
+from drapache.util.http import Response
 
 
 
-
-#for dev
-import pprint
-#
-
-
-
-class FileServer:
+class DropboxServer:
 	"""
 	The class responsable for hitting the dropbox and processing the results
 	
@@ -50,7 +44,7 @@ class FileServer:
 		path_components = path.split('/')
 		for component in path_components:
 			if component.startswith('_'):
-				return ResponseObject(403,'Forbidden',error=True)
+				return Response(403,'Forbidden',error=True)
 		
 		
 		try:
@@ -59,7 +53,7 @@ class FileServer:
 			#### checking for the is_Deleted flag
 			try:
 				if meta_info['is_deleted']:
-					return ResponseObject(410,"File is deleted",error=True)
+					return Response(410,"File is deleted",error=True)
 			except KeyError:
 				pass #its not deleted
 			
@@ -71,7 +65,7 @@ class FileServer:
 					if request.query_string:
 						redirect_location += '?'+request.query_string
 						
-					return ResponseObject(301,'redirect',headers={'Location':redirect_location})
+					return Response(301,'redirect',headers={'Location':redirect_location})
 				else:
 					return self._find_and_serve_index(meta_info,path)
 			
@@ -81,7 +75,7 @@ class FileServer:
 
 				
 		except dropbox.rest.ErrorResponse as e:
-			return ResponseObject(e.status,e.reason,headers=e.headers,error=True)
+			return Response(e.status,e.reason,headers=e.headers,error=True)
 			
 			
 	def _serve_file(self,file_meta):
@@ -101,9 +95,9 @@ class FileServer:
 		if f.startswith('#DBPYEXECUTE'):
 			#allows arbitrary text files to be run as dbpy code. security risk?
 			param_dict = dict(client=self.client,request=self.request)
-			return dbpyexecute.execute(f,**param_dict)
+			return dbpy.execute.execute(f,**param_dict)
 		headers = {'Content-type':self._get_content_type(file_meta)}
-		return ResponseObject(200,f,headers)
+		return Response(200,f,headers)
 		
 		
 	def _serve_python(self,file_meta):
@@ -112,10 +106,10 @@ class FileServer:
 		if f.startswith("#NOEXECUTE"):
 			#allows these files to be shared without getting executed
 			headers = {'Content-type':'text/plain'}
-			return ResponseObject(200,f,headers)
+			return Response(200,f,headers)
 		
 		param_dict = dict(client=self.client,request=self.request)
-		return dbpyexecute.execute(f,**param_dict)
+		return dbpy.execute.execute(f,**param_dict)
 
 	
 	def _find_and_serve_index(self,directory_meta,path):
@@ -153,7 +147,7 @@ class FileServer:
 			
 		#there are no index files, so lets return a default one
 		index_file = util.index_generator.get_index_file(directory_meta['contents'],path,self.client)
-		return ResponseObject(200,index_file)
+		return Response(200,index_file)
 		
 		
 	def _get_content_type(self,file_meta):
