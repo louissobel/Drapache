@@ -23,7 +23,7 @@ runs on drapache and demonstrates what can be done with dbpy.
 Misc. Features
 ----------------
 It will create an index for a folder if one doesn't exist, using a template found in Drapache/\_templates/
-Files or folders that begin with '_' will not be served, returning instead a 403-Forbidden HTTP response.
+Files or folders that begin with '\_' will not be served, returning instead a 403-Forbidden HTTP response.
 Right now they _do_ show up in an auto-generated index, but that is for debugging purposes and could be easily changed
 
 Technical
@@ -67,7 +67,7 @@ Running an instance locally
 7. Run `python server.py` and you should have a drapache instance on localhost (the default port is 5501)
 	
 Notes:
-*	add more testing subdomains by repeating step 3 for other subdomains
+*	add more testing subdomains by repeating step 4 for other subdomains
 *	There are other ways of managing subdomains than a flat file.. look in subdomain_manager.py for the base class
 	and an implementation of managing subdomains with mysql
 *	This will create a folder in your dropbox /Apps folder with the name of whatever app you created in step 2, and
