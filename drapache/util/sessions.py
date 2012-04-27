@@ -5,7 +5,6 @@ import sys
 
 
 
-
 class DrapacheSession:
 	#wraps the beaker session
 	#adds
@@ -19,6 +18,8 @@ class DrapacheSession:
 		self.beaker_dict = {}
 		
 		self.inner_dict = {}
+		
+		self.is_destroyed = False
 		
 		self.cookie = cookie
 	
@@ -36,7 +37,7 @@ class DrapacheSession:
 			self.update_dict()
 		
 	def destroy(self):
-		
+		self.is_destroyed = True
 		self.beaker_session.delete()
 		self.inner_dict.clear()
 		

@@ -13,6 +13,7 @@ import sandbox as pysandbox
 from drapache.util.http import Response
 from drapache import dbapi
 from drapache import util
+
 import builtins
 
 class Timeout(Exception):
@@ -60,13 +61,9 @@ class KThread(threading.Thread):
 
 class DBPYExecThread(KThread):
 	
-	def __init__(self,sandbox,builtins,locker,session,response,code,timeout):
+	def __init__(self,env,code,timeout):
 		KThread.__init__(self)
-		self.sandbox = sandbox
-		self.builtins = builtins
-		self.locker = locker
-		self.session = session
-		self.response = response
+		self.env = env
 		self.code = code
 		self.timeout = timeout
 		self.error = None
@@ -81,13 +78,14 @@ class DBPYExecThread(KThread):
 			#this ensures that privileged builtins are restored in the next disable
 			#so instead of this acting the register frame, I wrap it in a function
 			#so it acts on outer_wrapper
+			sys.stderr.write("here!\n")
 			def enable_protections():
-				for protection in self.sandbox.protections:
-					protection.enable(self.sandbox)
+				for protection in self.env.sandbox.protections:
+					protection.enable(self.env.sandbox)
 			enable_protections()
 
 
-			exec self.code in self.builtins
+			exec self.code in self.env.globals
 		
 		except builtins.UserDieException:
 			pass
@@ -101,23 +99,18 @@ class DBPYExecThread(KThread):
 			#i need to change the frame that I am acting on to the current one
 			#instead of whatever frame enable was called in
 			#find the builrin protection and set its frame
-			for protection in reversed(self.sandbox.protections):
+			for protection in reversed(self.env.sandbox.protections):
 				if protection.__class__.__name__ == 'CleanupBuiltins':
 					protection.frame = sys._getframe()
-				protection.disable(self.sandbox)
+				protection.disable(self.env.sandbox)
 
 			
 			#finishing up
 			#resource releasing (post-execution actions)
 			#are registered here
 			try:
-				#releasing all open files
-				self.locker.close_all()
-				
-				#setting the session cookie if necessary
-				session_header = self.session.get_header()
-				if session_header:
-					self.response.set_header(*self.session.get_header())
+				for op in self.env.cleanups:
+					op()
 
 			except Exception as e:
 				#an issue releasing resources
@@ -136,6 +129,7 @@ def get_sandbox():
 	sandbox_config.enable("time")
 	sandbox_config.enable("math")
 	sandbox_config.enable("exit")
+	sandbox_config.enable("stderr")
 	
 	sandbox_config.timeout = None
 	
@@ -169,7 +163,7 @@ def execute(filestring,**kwargs):
 							**kwargs
 							)
 							
-	builtin_dict = builtins.get_builtins(**builtin_params)
+	env = builtins.DBPYEnvironment(**builtin_params)
 	
 	#replaceing stdout
 	old_stdout = sys.stdout
@@ -178,7 +172,7 @@ def execute(filestring,**kwargs):
 	
 	try:
 
-		sandbox_thread = DBPYExecThread(sandbox,builtin_dict,locker,session,response,filestring,EXEC_TIMEOUT)
+		sandbox_thread = DBPYExecThread(env,filestring,EXEC_TIMEOUT)
 		sandbox_thread.start()
 	
 		sandbox_thread.join(EXEC_TIMEOUT)

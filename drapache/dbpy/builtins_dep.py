@@ -107,6 +107,7 @@ def get_builtins(**kwargs):
 		
 		#hack to make privileged functions compatible with register
 		outer_wrapper.func_name = function.func_name
+		outer_wrapper.__doc__ = function.__doc__
 		return outer_wrapper
 			
 	
@@ -129,8 +130,9 @@ def get_builtins(**kwargs):
 				def outer_wrapper(*args,**kwargs):
 					return callback(function_p(*args,**kwargs))
 
-			#hack to make privileged functions compatible with register
+			#hack to make privileged functions compatible with register, and docs
 			outer_wrapper.func_name = function.func_name
+			outer_wrapper.__doc__ = function.__doc__
 			return outer_wrapper
 		
 		return outer_decorator
@@ -143,9 +145,10 @@ def get_builtins(**kwargs):
 		return dbapi.jinja.render_dropbox_template(client,path,with_data)
 	
 	@register
-	def render_template(path,with_data=None,search_root="/_templates"):
+	def render_template(path,with_data=None):
 		"""
-		renders the given template
+		Renders the jinja template found in `path`. The parameter `with_data` (None by default)
+		specifies a dictionary that will be used to fill in the template.
 		"""
 		print render_template_to_string(path,with_data)
 		
