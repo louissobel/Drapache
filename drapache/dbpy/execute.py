@@ -79,7 +79,6 @@ class DBPYExecThread(KThread):
 			#this ensures that privileged builtins are restored in the next disable
 			#so instead of this acting the register frame, I wrap it in a function
 			#so it acts on outer_wrapper
-			sys.stderr.write("here!\n")
 			def enable_protections():
 				for protection in self.env.sandbox.protections:
 					protection.enable(self.env.sandbox)
