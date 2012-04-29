@@ -15,6 +15,7 @@ from drapache import dbapi
 from drapache import util
 
 import builtins
+import environment
 
 class Timeout(Exception):
 	pass
@@ -163,7 +164,7 @@ def execute(filestring,**kwargs):
 							**kwargs
 							)
 							
-	env = builtins.DBPYEnvironment(**builtin_params)
+	env = environment.DBPYEnvironment(**builtin_params)
 	
 	#replaceing stdout
 	old_stdout = sys.stdout

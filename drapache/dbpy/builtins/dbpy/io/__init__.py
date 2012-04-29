@@ -5,6 +5,8 @@ submodules = [file,jsonfile]
 
 name = 'io'
 
+__doc__ = "Module for file and json dropbox read/write operations"
+
 def build(env,path):
 	
 	

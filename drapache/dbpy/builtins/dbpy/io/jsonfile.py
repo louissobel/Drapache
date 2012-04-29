@@ -4,6 +4,8 @@ import json
 name = 'json'
 
 
+__doc__ = "Functions for working with json files that live on dropbox"
+
 def build(env,path):
 	
 	
@@ -13,8 +15,17 @@ def build(env,path):
 	
 	@env.register(self)
 	def open(path,from_data=None,timeout=None,default=dict):
-		#opens up a json file handle of sorts
-		#it will be backed by a WritableDropboxFile
+		"""
+		opens a json dictionary or list, returning a data-handle. Any changes to that
+		dictionary or list will be updated back to dropbox once the file handle is closed.
+		It can only be a dictionary or list because primitives are hard to keep a reference to in python,
+		a work-around for this would be nice.
+		Raises an `IOError` if something goes wrong, or a `ValueError` if the json is bad
+		
+		Use `from_data` to open up a json file from an existing dictionary or list.
+		
+		If `path` does not exist, it will be created
+		"""
 		
 		out_json = None	
 		try:
@@ -42,6 +53,9 @@ def build(env,path):
 		
 	@env.register(self)
 	def new_list(path,from_data=None,timeout=None):
+		"""
+		Creates a new json list. A strange, slightly redundant function. I've disliked it ever since I wrote it,
+		but I can't bring myself to delete it for some reason."""
 		out =  file.open(path,from_data=from_data,timeout=timeout,default=list)
 		if not isinstance(out,list):
 			raise ValueError("Object opened by open_json_list is not a list!")
@@ -51,6 +65,9 @@ def build(env,path):
 	@env.register(self)
 	@env.privileged
 	def close(inner_dict):
+		"""
+		Closes the json file handle. This will happen automatically, but this releases locks and resources
+		"""
 		for open_file_h in env.locker.open_files:
 			if hasattr(open_file_h,'json_object'):
 				if open_file_h.json_object is inner_dict:
@@ -59,6 +76,9 @@ def build(env,path):
 	@env.register(self)
 	@env.privileged
 	def save(path,json_object,timeout=None):
+		"""
+		Takes any json object and writes it to the given path
+		"""
 		json_file = file.open(path,to='json',timeout=timeout,allow_download=False)
 		json_file.json_object = json_object
 		close(json_file)
@@ -68,7 +88,7 @@ def build(env,path):
 	def load(path):
 		"""
 		loads a json file and returns it
-		throws a ValueError if the json file fucks up
+		throws a ValueError if the json file is not valid
 		"""
 		try:
 			return json.load(file.open(path))

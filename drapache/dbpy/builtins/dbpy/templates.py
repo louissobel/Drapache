@@ -5,6 +5,8 @@ import sys
 
 name = 'templates'
 
+__doc__ = "Functions for using jinja templates hosted on dropbox"
+
 def build(env,path):
 	
 	self = env.get_new_module(path+'.'+name)

@@ -4,6 +4,8 @@ import pprint
 
 name = 'text'
 
+__doc__ = "Functions for working with text"
+
 def build(env,path):
 	
 	
@@ -13,13 +15,16 @@ def build(env,path):
 	@env.register(self)
 	@env.privileged
 	def markdown_to_html(markdown_string):
+		"""
+		Converts the given markdown string to html, returning it
+		"""
 		return markdown.markdown(markdown_string)
 		
 	@env.register(self)
 	@env.privileged
-	def pretty_print(thingy,pre=True):
+	def pretty_print(thingy):
 		"""
-		Pretty prints the given thingy
+		Pretty prints the given `thingy`
 		"""
 		print "<pre>"
 		printer = pprint.PrettyPrinter(indent=4)

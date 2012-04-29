@@ -6,7 +6,7 @@ About
 ----------
 A python server that uses the dropbox API to serve files that are hosted on dropbox. It will not be particularly useful
 to a developer who is comfortable with git, heroku, ftp, or another method of hosting a website. It will be useful, however,
-to people who are not proficient with these tools. It is extremely simple because whatever is in the Drapache folder in the users
+to people who don't know how to use these tools. It's very simple - whatever is in the Drapache folder in the users
 dropbox /Apps folder will be immediately available on the internet.
 Get it set up at [get.drapache.com](http://get.drapache.com)
 
@@ -22,7 +22,7 @@ runs on drapache and demonstrates what can be done with dbpy.
 
 Misc. Features
 ----------------
-It will create an index for a folder if one doesn't exist, using a template found in Drapache/\_templates/
+It will create an index for a folder if one doesn't exist, using a template found in Drapache/\_templates/.
 Files or folders that begin with '\_' will not be served, returning instead a 403-Forbidden HTTP response.
 Right now they _do_ show up in an auto-generated index, but that is for debugging purposes and could be easily changed
 

@@ -1,4 +1,4 @@
-import dbpy
+import builtins.dbpy
 import sys
 
 class DBPYModule:
@@ -121,7 +121,7 @@ class DBPYEnvironment:
 			return outer_decorator
 			
 		#filling builtins with self
-		self.globals['dbpy'] = dbpy.build(self,None)
+		self.globals['dbpy'] = builtins.dbpy.build(self,None)
 	
 	def add_module(self,mod,name):
 		self.modules[name] = mod

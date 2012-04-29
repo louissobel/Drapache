@@ -2,6 +2,8 @@
 
 name = 'session'
 
+__doc__ = "A dictionary that represents the session of a user on the site"
+
 class DBPYSession(dict):
 	
 	def __init__(self,env):
@@ -11,12 +13,18 @@ class DBPYSession(dict):
 		@env.register(self)
 		@env.privileged
 		def start():
+			"""
+			Starts the session.
+			"""
 			session.start()
 			self.update(session.inner_dict)
 		
 		@env.register(self)
 		@env.privileged	
 		def destroy():
+			"""
+			Destroys the session
+			"""
 			session.destroy()
 			
 

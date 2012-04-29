@@ -3,6 +3,7 @@ Things that can be done from here:
 
 - TESTS.
 	- enough said. first priority; it has become way too big to test comprehensively by hand.
+	- dbpy tests are important because if they are working, the whole system is working
 
 - Make more subdomain managers / improve the Mysql one with cacheing.
 - this is important because the subdomain lookup occurs for every request
@@ -22,12 +23,12 @@ Things that can be done from here:
       from a dropbox.client.DropboxClient and a drapache.util.http.Request, and call serve on it to get a 
 	  drapache.util.http.Response
 
-- Also, I think there is room for a lot of cacheing... maybe of dropbox clients?
+- Also, I think there is room for a lot of cacheing... maybe of dropbox clients themselves?
 
-- Some kind of global configuration mechanism for the server itself... like debug, how to handle index files, dbpy timeout, etc
+- Some kind of global configuration mechanism for the server... like debug, how to handle index files, dbpy timeout, etc
 
-- I haven't really thought about how much memory could be used, because all files as well as the output of .dbpy scripts
-  is saved in memory. Limit this somehow/use tempory files?
+- I haven't really thought about just how much memory could be used, because all files as well as the output of .dbpy scripts
+  is saved in memory. Limit this somehow/use temporary files?
 
 - Writing blog.drapache was a pain because, for example, when I made a small change is CSS I had to wait a while before 
   seeing what it looked like in the browser (because of the slow page load times + the dropbox sync delay).

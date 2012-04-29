@@ -4,11 +4,14 @@ import session
 import http
 import text
 
-submodules = [templates,io,session,http,text]
+submodules = [http,io,templates,session,text]
 
 import os
+import imp
 
 name = 'dbpy'
+
+__doc__ = """The root module. All other modules are under this namespace"""
 
 def build(env,path):
 
@@ -19,14 +22,23 @@ def build(env,path):
 		
 	for module in submodules:
 		setattr(self,module.name,module.build(env,name))
-		
+	
+
+	#DOC:get_params
+	"""
+	The parsed parameters from the request url in a multidict
+	"""
 	self.get_params = env.get_params
+	
+	#DOC:post_params
+	"""
+	If the request was a post request, the parsed parameters from the body of the post
+	"""
 	self.post_params = env.post_params
 	
 	#get a version of any builtins we use in this module
 	io = self.io
 	
-
 	#### write the builtins!
 	def dropbox_import_callback(imports):
 		#hm... unfortunately, if any of the imports mutate the built_in_hash, they can
@@ -39,16 +51,20 @@ def build(env,path):
 	@env.register(self)
 	@env.privileged_with_callback(dropbox_import_callback)
 	def dropbox_import(*module_paths):
+		"""
+		Accepts multiple path arguments, and will download each one
+		and create a module in the global namespace, like the python import statement
+		"""
 		#look first in the path given by folder search
 		#then look in a '/_scripts' folder? or similarly named?
 		#not right now
 		
 		#NO PACKAGE SUPPORT... SIMPLE FILES ONLY FOR NOW
 		imports = []
-		for module_path in module_paths:
-			if not module_name in env.globals:	
-				filestring = io.file.read(module_path)
-				module_name = os.path.basename(module_path).split('.',1)[0]
+		for module_path in module_paths:	
+			filestring = io.file.read(module_path)
+			module_name = os.path.basename(module_path).split('.',1)[0]
+			if not module_name in env.globals:
 				out_module = imp.new_module(module_name)
 				env.globals[module_name] = out_module
 				imports.append( (filestring,out_module) )
@@ -58,7 +74,7 @@ def build(env,path):
 	@env.register(self)	
 	def die(message="",report=True):
 		"""
-		Raises an Exception
+		Terminates the script at the point when it is called, printing the error message if report is True
 		"""
 		if report:
 			print message
