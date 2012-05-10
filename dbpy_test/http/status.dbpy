@@ -1,0 +1,2 @@
+dbpy.http.set_response_status(255)
+print "forbidden"

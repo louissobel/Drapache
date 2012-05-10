@@ -1,0 +1,9 @@
+{
+	"point":"to test ability to read json",
+	"id" : 5,
+	"list" : [
+		1,
+		2,
+		"three"
+	]
+}

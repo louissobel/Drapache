@@ -1,0 +1,8 @@
+save_data = {'test':'it worked','green':[5,3,2,1]}
+
+dbpy.io.json.save('savedjson.json',save_data)
+
+loaded_data = dbpy.io.json.load('savedjson.json')
+
+print loaded_data['test']
+print loaded_data['green'][1]

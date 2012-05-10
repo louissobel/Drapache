@@ -1,0 +1,20 @@
+
+
+
+{
+	"point":"to test ability to read json",
+	"id" : 5,
+	"list" : [
+		1,
+		2,
+		"three"
+	]
+}
+
+
+
+jsonobject = dbpy.io.json.load('existing/sample_json.json')
+
+print jsonobject['id']
+for thing in jsonobject['list']:
+	print thing

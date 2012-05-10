@@ -1,0 +1,2 @@
+def printhi():
+	print "hello from imported file"

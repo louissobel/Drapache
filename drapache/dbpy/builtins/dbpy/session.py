@@ -26,6 +26,7 @@ class DBPYSession(dict):
 			Destroys the session
 			"""
 			session.destroy()
+			self.clear()
 			
 
 def build(env,path):

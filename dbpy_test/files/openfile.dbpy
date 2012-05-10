@@ -1,0 +1,18 @@
+#write a file, open it,
+#edit it, save it, read it, it should reflect the changes
+
+
+message = "hello"
+
+
+dbpy.io.file.write("openedfile.txt",message)
+
+file_handle = dbpy.io.file.open("openedfile.txt",to='append')
+
+file_handle.write(" there")
+
+dbpy.io.file.close(file_handle)
+
+final_string = dbpy.io.file.read("openedfile.txt")
+
+print final_string

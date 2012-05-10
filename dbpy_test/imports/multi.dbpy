@@ -1,0 +1,8 @@
+dbpy.dropbox_import('importme.dbpy','importmetoo.dbpy','andme.dbpy')
+
+
+importme.printhi()
+
+print importmetoo.square(3)
+
+print andme.backwords('hello')

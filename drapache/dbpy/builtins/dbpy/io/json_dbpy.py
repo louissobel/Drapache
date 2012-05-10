@@ -68,6 +68,8 @@ def build(env,path):
 		"""
 		Closes the json file handle. This will happen automatically, but this releases locks and resources
 		"""
+		#look through all the registered open files (file.open adds to this list)
+		#and see if the json dictionary we are dealing  with this matches, (then close it if so)
 		for open_file_h in env.locker.open_files:
 			if hasattr(open_file_h,'json_object'):
 				if open_file_h.json_object is inner_dict:
@@ -81,7 +83,7 @@ def build(env,path):
 		"""
 		json_file = file.open(path,to='json',timeout=timeout,allow_download=False)
 		json_file.json_object = json_object
-		close(json_file)
+		close(json_object) #because of the way that close ^^ works, we pass the dictionary, not the file handle itself
 	
 	@env.register(self)
 	@env.privileged

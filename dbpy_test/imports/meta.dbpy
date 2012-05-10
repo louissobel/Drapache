@@ -1,0 +1,1 @@
+dbpy.dropbox_import('simple.dbpy')

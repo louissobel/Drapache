@@ -1,0 +1,8 @@
+dbpy.dropbox.make_directory('DELETEME')
+dbpy.dropbox.remove('DELETEME')
+
+filelist = dbpy.dropbox.list_directory()
+filelist.sort()	
+
+for filename in filelist:	
+	print filename

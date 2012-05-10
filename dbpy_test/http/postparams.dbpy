@@ -1,0 +1,5 @@
+params = dbpy.http.post_params
+
+
+print params['foo'][0]
+print ','.join(params['list'])

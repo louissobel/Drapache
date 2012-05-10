@@ -1,0 +1,17 @@
+
+
+deletes = [
+			'dropbox/DELETEME',
+			'files/writtenfile.txt',
+			'files/savedjson.json',
+			'files/openedfile.txt',
+			'files/openedjson.json'
+			]
+
+for path in deletes:
+	try:
+		dbpy.dropbox.remove(path)
+	except IOError:
+		print "Unable to delete "+path
+	else:
+		print "Delete "+path+"ok"

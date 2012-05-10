@@ -1,0 +1,21 @@
+# write a json file
+# open it
+# edit it
+# close it
+# read it
+
+
+test_json = {'list':[1,2,3]}
+dbpy.io.json.save("openedjson.json",test_json)
+
+down_json = dbpy.io.json.open("openedjson.json")
+
+down_json['list'].append(4)
+
+dbpy.io.json.close(down_json)
+
+
+
+loaded_data = dbpy.io.json.load("openedjson.json")
+
+print loaded_data['list'][3]

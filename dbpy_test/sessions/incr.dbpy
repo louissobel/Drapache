@@ -1,0 +1,6 @@
+dbpy.session.start()
+
+
+curval = dbpy.session.get('test',0)
+
+dbpy.session['test'] = curval + 1

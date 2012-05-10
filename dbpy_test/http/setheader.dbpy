@@ -1,0 +1,1 @@
+dbpy.http.set_response_header("X-dbpy-test","ok")

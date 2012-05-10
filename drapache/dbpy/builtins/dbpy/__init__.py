@@ -3,8 +3,9 @@ import io
 import session
 import http
 import text
+import dropbox_dbpy
 
-submodules = [http,io,templates,session,text]
+submodules = [http,io,templates,session,text,dropbox_dbpy]
 
 import os
 import imp
@@ -23,21 +24,9 @@ def build(env,path):
 	for module in submodules:
 		setattr(self,module.name,module.build(env,name))
 	
-
-	#DOC:get_params
-	"""
-	The parsed parameters from the request url in a multidict
-	"""
-	self.get_params = env.get_params
-	
-	#DOC:post_params
-	"""
-	If the request was a post request, the parsed parameters from the body of the post
-	"""
-	self.post_params = env.post_params
 	
 	#get a version of any builtins we use in this module
-	io = self.io
+	io = env.get_module('dbpy.io')
 	
 	#### write the builtins!
 	def dropbox_import_callback(imports):

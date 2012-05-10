@@ -79,10 +79,13 @@ def build(env,path):
 			except IOError as e:
 				raise IOError('Unable to open file for writing ')
 				
-			#register the open file with the locker
+			#register the open file with the locker,
+			#and the necessary cleanup action
 			def close_file_cleanup():
 				out_file._close(env.locker)
 			env.add_cleanup(close_file_cleanup)
+			
+			env.locker.register_open_file(out_file)
 					
 		else:
 			raise TypeError('Invalid mode for opening file. read, write, or append')
@@ -116,20 +119,6 @@ def build(env,path):
 		"""
 		return open(path).read()
 	
-	
-	@env.register(self)
-	@env.privileged
-	def delete(path):
-		"""
-		deletes the given path.
-		"""
-		if not path.startswith('/'):
-			path = env.request_folder + path
-
-		try:
-			env.client.file_delete(path)
-		except dropbox.rest.ErrorResponse:
-			raise IOError("Unable to delete file %s"%path)
 			
 			
 	return self

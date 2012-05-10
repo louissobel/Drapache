@@ -1,0 +1,7 @@
+
+if dbpy.http.get_request_header("X-dbPy-test") == "ok":
+	print "ok"
+	
+else:
+	print "not ok"
+	

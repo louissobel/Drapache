@@ -1,0 +1,7 @@
+dbpy.session.start()
+
+dbpy.session.destroy()
+
+
+
+print dbpy.session.get('test','not there')

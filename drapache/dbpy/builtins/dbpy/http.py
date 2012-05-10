@@ -10,6 +10,20 @@ def build(env,path):
 	
 	dbpy = env.get_module('dbpy')
 	
+	
+	#DOC:get_params
+	"""
+	The parsed parameters from the request url in a multidict
+	"""
+	self.get_params = env.get_params
+	
+	#DOC:post_params
+	"""
+	If the request was a post request, the parsed parameters from the body of the post
+	"""
+	self.post_params = env.post_params
+	
+	
 	@env.register(self)
 	def set_response_header(header,value):
 		"""

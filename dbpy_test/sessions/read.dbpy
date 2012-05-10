@@ -1,0 +1,4 @@
+dbpy.session.start()
+
+
+print dbpy.session['test']

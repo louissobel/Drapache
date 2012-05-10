@@ -1,0 +1,4 @@
+
+text = dbpy.io.file.read('existing/sample_text.txt')
+
+print text

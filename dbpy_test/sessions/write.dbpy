@@ -1,0 +1,4 @@
+dbpy.session.start()
+
+
+dbpy.session['test'] = 'ok'

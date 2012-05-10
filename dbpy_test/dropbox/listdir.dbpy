@@ -1,0 +1,5 @@
+filelist = dbpy.dropbox.list_directory()
+filelist.sort()	
+
+for filename in filelist:	
+	print filename

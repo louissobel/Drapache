@@ -1,0 +1,3 @@
+dbpy.dropbox_import('importme.dbpy')
+
+importme.printhi()

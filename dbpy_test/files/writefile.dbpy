@@ -1,0 +1,5 @@
+text = "This file was just written."
+
+dbpy.io.file.write('writtenfile.txt',text)
+
+print dbpy.io.file.read('writtenfile.txt')

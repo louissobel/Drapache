@@ -1,0 +1,2 @@
+def backwords(word):
+	return ''.join(reversed(word))
