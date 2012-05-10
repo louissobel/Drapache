@@ -72,3 +72,9 @@ Notes:
 	and an implementation of managing subdomains with mysql
 *	This will create a folder in your dropbox /Apps folder with the name of whatever app you created in step 2, and
 	your local instance will serve from that folder, _not_ the Drapache folder that you will get if you sign up through get.drapache
+	
+Testing
+------------------------------
+The tests test the functionality of the dbpy framework, which is sufficient for integration testing of the whole system.
+To use, create a symlink from the folder dbpy_test to wherever you are serving drapache file from, then go to test.html in that folder.
+It uses the QUnit testing framework.
