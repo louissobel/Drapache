@@ -52,13 +52,13 @@ def build(env,path):
 		return out_json
 		
 	@env.register(self)
-	def new_list(path,from_data=None,timeout=None):
+	def open_list(path,from_data=None,timeout=None):
 		"""
-		Creates a new json list. A strange, slightly redundant function. I've disliked it ever since I wrote it,
+		Opens a json list. A strange, slightly redundant function. I've disliked it ever since I wrote it,
 		but I can't bring myself to delete it for some reason."""
-		out =  file.open(path,from_data=from_data,timeout=timeout,default=list)
+		out =  self.open(path,from_data=from_data,timeout=timeout,default=list)
 		if not isinstance(out,list):
-			raise ValueError("Object opened by open_json_list is not a list!")
+			raise ValueError("Object opened by open_list is not a list!")
 	
 
 		
