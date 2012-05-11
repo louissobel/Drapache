@@ -59,6 +59,7 @@ def build(env,path):
 		out =  self.open(path,from_data=from_data,timeout=timeout,default=list)
 		if not isinstance(out,list):
 			raise ValueError("Object opened by open_list is not a list!")
+		return out
 	
 
 		
