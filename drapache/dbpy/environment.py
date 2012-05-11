@@ -8,6 +8,10 @@ class DBPYModule:
 
 class DBPYEnvironment:
 	
+	DBPY_TIMEOUT = 25
+	BACKGROUND_THREAD_LIMIT = 10
+	
+	
 	def __init__(self,**kwargs):
 		
 		for k,v in kwargs.items():
@@ -21,12 +25,14 @@ class DBPYEnvironment:
 		#things that will be global to the builtins
 		self.globals = {}
 		
+		#environment state stuff
 		self.modules = {}
-		
 		self.cleanups = []
 		
+		self.background_thread_count = 0
 		
 		self.in_sandbox = True
+		
 		
 		def register(target):
 						

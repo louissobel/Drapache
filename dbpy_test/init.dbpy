@@ -6,6 +6,7 @@ deletes = [
 			'files/savedjson.json',
 			'files/openedfile.txt',
 			'files/openedjson.json'
+			'background/bg_written.txt'
 			]
 
 for path in deletes:

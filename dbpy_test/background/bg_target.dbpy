@@ -1,0 +1,1 @@
+dbpy.io.file.write('bg_written.txt',"ok\n")

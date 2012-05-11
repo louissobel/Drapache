@@ -5,10 +5,19 @@ import http
 import text
 import dropbox_dbpy
 
+import time
 submodules = [http,io,templates,session,text,dropbox_dbpy]
 
+import drapache
+
 import os
+import sys
 import imp
+import threading
+
+import urllib
+import urllib2
+import requests
 
 name = 'dbpy'
 
@@ -16,7 +25,7 @@ __doc__ = """The root module. All other modules are under this namespace"""
 
 def build(env,path):
 
-	from drapache import dbpy
+
 	
 	#assign submodules
 	self = env.get_new_module(name)
@@ -60,6 +69,52 @@ def build(env,path):
 		
 		return imports
 		
+		
+	@env.register(self)
+	@env.privileged
+	def background_request(url,method='get',params=None,local=False):
+		"""
+		Sends off an asynchronous http request
+		There is no way to get the return value yet... because it registers it as a post-op
+		(done after dbpy execution completes)
+		
+		set local to True to make the look up relative!
+		"""
+		method = method.lower()
+		
+		if local:
+			if not url.startswith('/'):
+				url = env.request_folder + url
+			url = 'http://'+env.request.host + url
+		
+		if params is None:
+			params = ''
+		else:
+			params = urllib.urlencode(params)
+		
+		#although i could use getattr, going to do it explicitly
+		if method == 'get':
+			if params:
+				url = url + '?' + params
+			target = requests.get
+		elif method == 'post':
+			target = requests.post
+			
+		else:
+			raise TypeError("Sorry! But type can only be get or post right now")
+
+			
+		if env.background_thread_count < env.BACKGROUND_THREAD_LIMIT:
+			env.background_thread_count += 1
+			request_thread = threading.Thread(target=target,args=(url,),kwargs={'params':params})
+			request_thread.daemon = True
+			request_thread.start()
+
+			return True
+		else:
+			return False
+			#Raise error?
+		
 	@env.register(self)	
 	def die(message="",report=True):
 		"""
@@ -67,7 +122,7 @@ def build(env,path):
 		"""
 		if report:
 			print message
-		raise dbpy.builtins.UserDieException(message)
+		raise drapache.dbpy.builtins.UserDieException(message)
 		
 		
 	return self

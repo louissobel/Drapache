@@ -2,6 +2,7 @@ dropbox==1.4
 -e git+git://github.com/haypo/pysandbox.git#egg=sandbox
 markdown
 beaker
+requests
 
 #for beaker
 PyCrypto

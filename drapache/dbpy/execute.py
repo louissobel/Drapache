@@ -22,9 +22,11 @@ class Timeout(Exception):
 
 
 class KThread(threading.Thread):
-	"""A subclass of threading.Thread, with a kill()
+	"""
+	A subclass of threading.Thread, with a kill()
 	method.
-	found this @ http://www.velocityreviews.com/forums/t330554-kill-a-thread-in-python.html"""
+	found this @ http://www.velocityreviews.com/forums/t330554-kill-a-thread-in-python.html
+	"""
 	def __init__(self, *args, **keywords):
 			threading.Thread.__init__(self, *args, **keywords)
 			self.killed = False
@@ -62,11 +64,13 @@ class KThread(threading.Thread):
 
 class DBPYExecThread(KThread):
 	
-	def __init__(self,env,code,timeout):
+	def __init__(self,env,code):
 		KThread.__init__(self)
 		self.env = env
 		self.code = code
-		self.timeout = timeout
+		
+		self.timeout = env.DBPY_TIMEOUT
+		
 		self.error = None
 		self.error_traceback = ""
 		
@@ -86,8 +90,10 @@ class DBPYExecThread(KThread):
 
 
 			exec self.code in self.env.globals
+			
 		
 		except builtins.UserDieException:
+			# this doesn't count as an Exception
 			pass
 		
 		except Exception as e:			
@@ -141,7 +147,7 @@ def execute(filestring,**kwargs):
 	
 	
 	PRINT_EXCEPTIONS = True
-	EXEC_TIMEOUT = 25
+
 	DEBUG = True
 	
 	response = Response(None,"")
@@ -172,10 +178,10 @@ def execute(filestring,**kwargs):
 	
 	try:
 
-		sandbox_thread = DBPYExecThread(env,filestring,EXEC_TIMEOUT)
+		sandbox_thread = DBPYExecThread(env,filestring)
 		sandbox_thread.start()
 	
-		sandbox_thread.join(EXEC_TIMEOUT)
+		sandbox_thread.join(env.DBPY_TIMEOUT)
 	
 		if sandbox_thread.isAlive():
 			#time to kill it
@@ -185,10 +191,15 @@ def execute(filestring,**kwargs):
 		
 		if sandbox_thread.error is not None:
 			
+
+			
 			#this is where processing of the traceback should take place
 			#so that we can show a meaningful error message
 			if DEBUG:
+				print "<h1>Debug Traceback</h1>"
+				print "<pre>"
 				sys.stdout.write(sandbox_thread.error_traceback)
+				print "</pre>"
 
 			raise sandbox_thread.error
 

@@ -206,7 +206,7 @@ $('document').ready(function() {
 		});
 		
 		asyncTest("Multi request session",function() {
-		
+			expect(1);
 			$.ajax('sessions/clear.dbpy',{
 				type:"GET",
 				async:false
@@ -238,12 +238,14 @@ $('document').ready(function() {
 	module("Templates");
 	
 		asyncTest('Simple Template',function() {
+			expect(1);
 			ajaxAssert('templates/simple.dbpy',"Simple Template",function(data,msg,response) {
 				return data == "ok\n";
 			});
 		});
 	
 		asyncTest("Template with Inheritence",function() {
+			expect(1);
 			ajaxAssert('templates/inherits.dbpy',"Inherits Template",function(data,msg,response) {
 				return data == "extends-ok\n";
 			});
@@ -252,22 +254,46 @@ $('document').ready(function() {
 	module("Imports");
 	
 		asyncTest("Simple Import",function() {
+			expect(1);
 			ajaxAssert('imports/simple.dbpy',"Simple Import",function(data,msg,response) {
 				return data == "hello from imported file\n";
 			});
 		});
 		
 		asyncTest("Nested Import",function() {
+			expect(1);
 			ajaxAssert('imports/meta.dbpy',"Nested Import",function(data,msg,response) {
 				return data == "hello from imported file\n";
 			});
 		});
 		
 		asyncTest("Multi-Import",function() {
+			expect(1);
 			ajaxAssert('imports/multi.dbpy',"Multi Import",function(data,msg,response) {
 				return data == "hello from imported file\n9\nolleh\n"
 			});
 		});
+		
+	module("Background");
+	
+		asyncTest("Background Request",function() {
+			expect(2);
+			$.ajax('background/bg_trigger.dbpy',{
+				method:'get',
+				async:false
+			});
+			ok(true,"background request triggered");
+			
+			//then give it time to happen
+			setTimeout(function() {
+				ajaxAssert('background/bg_written.txt',"Background request not triggered",function(data,msg,response) {
+					return data == "ok\n";
+				});
+			},10000);
+		
+		
+		});
+	
 });
 
 
