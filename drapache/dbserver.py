@@ -70,7 +70,7 @@ class DropboxServer:
 					return self._find_and_serve_index(meta_info,path)
 			
 			else:
-				#serve file handles the routing of pyhton vs file
+				#serve file handles the routing the file to the proper file server.. controller if you will
 				return self._serve_file(meta_info)
 
 				
