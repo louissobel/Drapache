@@ -134,7 +134,6 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		
 		except Exception as e:
 			### Caught an error, now attempting to send a 500 server error response
-			sys.stderr.write("WHAT AM I DOING EHRE!!!!!")
 			traceback.print_exc()
 			self.send_error(500,str(e))
 		
