@@ -1,0 +1,1 @@
+dbpy.io.file.render('existing/sample_text.txt')

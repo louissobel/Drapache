@@ -62,12 +62,25 @@ $('document').ready(function() {
 				return data == "This is a file to test for the ability to read files.\nSecond line.\n";
 			});
 		});
+		asyncTest("Render File",function() {
+			expect(1);
+			ajaxAssert('files/renderfile.dbpy',"Did not read file correctly",function(data,msg,response) {
+				return data == "This is a file to test for the ability to read files.\nSecond line.";
+			});
+		});
 		
 		
 		asyncTest("Load json",function() {
 			expect(1);
 			ajaxAssert('files/loadjson.dbpy',"Did not read json correctly",function(data,msg,response) {
 				return data == "5\n1\n2\nthree\n";
+			});
+		});
+		
+		asyncTest("Render json",function() {
+			expect(1);
+			ajaxAssert('files/renderjson.dbpy',"Did not render json correctly",function(data,msg,response) {
+				return data.id == 5;
 			});
 		});
 		
@@ -145,6 +158,21 @@ $('document').ready(function() {
 			ajaxAssert('http/redirect.dbpy',"Redirect unsuccessful",function(data,msg,response) {
 				return data == "you've been redirected!\n";
 			});
+		});
+		
+		asyncTest("Error",function() {
+			expect(1);
+			$.ajax('http/errorresponse.dbpy',{
+				success: function(data) {
+					ok(false,"this was supposed to be an error!");
+				},
+				error: 	function(ob,mes,err) {
+					ok(true,"Sweet, an error");
+					start();
+				}
+			
+			});
+
 		});
 		
 		asyncTest("Get Params",function() {
