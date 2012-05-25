@@ -1,5 +1,6 @@
 
 import json
+import sys
 
 name = 'json'
 
@@ -12,6 +13,7 @@ def build(env,path):
 	self = env.get_new_module(path+'.'+name)
 	
 	file = env.get_module('dbpy.io.file')
+	http = env.get_module('dbpy.http')
 	
 	@env.register(self)
 	def open(path,from_data=None,timeout=None,default=dict):
@@ -98,5 +100,13 @@ def build(env,path):
 		except ValueError:
 			raise ValueError('Unable to parse json file')
 			
+	@env.register(self)
+	def render(path):
+		"""
+		Renders the given json path to stdout
+		With the proper Content-Type
+		"""
+		http.set_response_header('Content-Type','application/json')
+		sys.stdout.write(file.read(path))
 			
 	return self

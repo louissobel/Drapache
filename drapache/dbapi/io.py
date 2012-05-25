@@ -1,5 +1,6 @@
 """
 Implements a class for locking and unlocking
+As well as the FileObjects
 """
 import uuid
 import sys
@@ -17,7 +18,7 @@ class ReadableDropboxFile(StringIO.StringIO):
 	def __init__(self,path,client):
 		
 		try:
-			response = client.get_file(path)
+			response,metadata = client.get_file_and_metadata(path)
 		except dropbox.rest.ErrorResponse:
 			#or should i throw an exception? hmmm
 			#or should i return none
@@ -27,6 +28,8 @@ class ReadableDropboxFile(StringIO.StringIO):
 		response.close()
 		
 		StringIO.StringIO.__init__(self,filestring)
+		
+		self.metadata = metadata
 
 	def write_error(self,*args,**kwargs):
 		raise IOError("Cannot write to a file opened for reading!")
@@ -51,9 +54,11 @@ class LiveDropboxFile(StringIO.StringIO):
 		if download:
 			readable = ReadableDropboxFile(path,client)
 			StringIO.StringIO.__init__(self,readable.read())
+			self.metadata = readable.metadata
 			
 		else:
 			StringIO.StringIO.__init__(self)
+			self.metadata = {}
 		
 		
 	def is_open(self):

@@ -11,6 +11,10 @@ def build(env,path):
 	dbpy = env.get_module('dbpy')
 	
 	
+	#TODO:
+	#look... all this duplication of data in the request.
+	#eh.
+	
 	#DOC:get_params
 	"""
 	The parsed parameters from the request url in a multidict
@@ -22,6 +26,12 @@ def build(env,path):
 	If the request was a post request, the parsed parameters from the body of the post
 	"""
 	self.post_params = env.post_params
+	
+	#DOC:request
+	"""
+	The raw request object.
+	"""
+	self.request = env.request
 	
 	
 	@env.register(self)
@@ -58,6 +68,17 @@ def build(env,path):
 		set_response_header('Location',where)
 		if immediately:
 			dbpy.die("redirecting")
+			
+	@env.register(self)
+	def error(which,message,immediately=True):
+		"""
+		Returns an error response
+		"""
+		env.response.status = which
+		env.response.body = message
+		env.response.error = True
+		if immediately:
+			dbpy.die("User Error - %d" % which)
 			
 			
 	return self

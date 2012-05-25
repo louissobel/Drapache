@@ -2,6 +2,7 @@ import dropbox
 
 from drapache import dbapi
 
+import sys
 
 name = 'file'
 
@@ -11,6 +12,7 @@ def build(env,path):
 	
 	self = env.get_new_module(path+'.'+name)
 	
+	dbpy = env.get_module('dbpy')
 	
 	@env.register(self)
 	@env.privileged
@@ -118,6 +120,18 @@ def build(env,path):
 		reads the file given by path and returns a string of its contents
 		"""
 		return open(path).read()
+		
+	
+	@env.register(self)
+	def render(path):
+		"""
+		Will read and print the file given by path, withthe proper content type
+		"""
+		file_h = open(path)
+		content_type = file_h.metadata['mime_type']
+		dbpy.http.set_response_header('Content-Type',content_type)
+		sys.stdout.write(file_h.read())
+		
 	
 			
 			
