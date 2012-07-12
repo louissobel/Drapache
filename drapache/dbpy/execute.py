@@ -92,8 +92,8 @@ class DBPYExecThread(KThread):
 			exec self.code in self.env.globals
 			
 		
-		except builtins.UserDieException:
-			# this doesn't count as an Exception
+		except env.UserDieException:
+			# this doesn't count as an Exception, just that the user wanted to quit
 			pass
 		
 		except Exception as e:			
@@ -143,21 +143,18 @@ def get_sandbox():
 	return sandbox		
 		
 
-def execute(filestring,**kwargs):
+def execute(filestring, request, proxy):
 	
 	
-	PRINT_EXCEPTIONS = True
-
-	DEBUG = True
+	PRINT_EXCEPTIONS = getattr(settings, 'DBPY_PRINT_EXCEPTIONS', False)
+	DEBUG = getattr(settings, 'DBPY_DEBUG', False)
 	
 	response = Response(None,"")
 	
 	sandbox = get_sandbox()
 	
 	#setting up the parameters for the builtin construction
-	locker = dbapi.io.DropboxFileLocker(kwargs['client'])
-	request = kwargs['request']
-	
+	locker = dbapi.io.DropboxFileLocker(proxy.client)
 	cookie = request.headers.get('Cookie',None)
 	session = util.sessions.DrapacheSession(cookie)
 	
@@ -166,8 +163,9 @@ def execute(filestring,**kwargs):
 							locker=locker,
 							sandbox=sandbox,
 							session=session,
-							**kwargs
-							)
+							request=request,
+							proxy=proxy,
+					)
 							
 	env = environment.DBPYEnvironment(**builtin_params)
 	
@@ -190,9 +188,7 @@ def execute(filestring,**kwargs):
 			sandbox_thread.join()
 		
 		if sandbox_thread.error is not None:
-			
-
-			
+				
 			#this is where processing of the traceback should take place
 			#so that we can show a meaningful error message
 			if DEBUG:

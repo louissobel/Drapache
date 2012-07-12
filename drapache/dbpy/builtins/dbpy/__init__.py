@@ -114,6 +114,7 @@ def build(env,path):
 		else:
 			return False
 			#Raise error?
+			
 		
 	@env.register(self)	
 	def die(message="",report=True):
@@ -122,7 +123,7 @@ def build(env,path):
 		"""
 		if report:
 			print message
-		raise drapache.dbpy.builtins.UserDieException(message)
+		raise env.UserDieException(message)
 		
 		
 	return self

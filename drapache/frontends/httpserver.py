@@ -13,23 +13,17 @@ import traceback
 import threading
 
 import drapache
-from drapache import util
+
+
 
 
 
 class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 	"""
-	This class is responsible for sub-routing and headers,
-	getting/processing content gets farmed out (this will help when i thread?)
-	also, pulling out parameters
+	This class is responsible for creating the request object
+	getting/processing content gets farmed out to a dropbox proxy
+	pulling out the proper use and host and subdomain etcetera happens elsewhere too
 	"""
-	
-	
-	
-	
-	#def setup(self):
-	#	BaseHTTPServer.BaseHTTPRequestHandler.setup(self)
-		#print self.request.settimeout(5)
 	
 	def do_GET(self):
 		return self.serve(method='get')
@@ -38,66 +32,42 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		return self.serve(method='post')
 	
 	def serve(self,method=None):
+		
+		
+		dropbox_resolver = getattr(drapache.settings, 'DROPBOX_RESOLVER', drapache.core.resolvers.SimpleResolver)
 			
 		try:
-			
+				
+			#### Processing the Request
 			#create an empty request object
-			request = util.http.Request()
+			request = drapache.util.http.Request()
 
-			#pulling out the host
-			host_string = self.headers.get("Host")
-			host_rest = host_string.split(".",1) #at most one split
-			if len(host_rest) == 1:
-				subdomain = None
-			else:
-				subdomain = host_rest[0]
-			
 			#setting some request variables
 			request.host = host_string
-			request.subdomain = subdomain
 			request.headers = self.headers
+			
+			request.method = method
 		
-			#pulling out the request path and query from the url
-			path,query_string = self.parse_raw_path(self.path)
+		
+		    parsed_url_path = urlparse.urlparse(self.path)
+    		path = parsed_url_path.path
+    		query_string = parsed_url_path.query
+    		if path == '':
+    			path = '/'
+    		if query_string == '':
+    			query_string = None
 		
 			#parsing the query
-			if query_string is not None:
-				get_params = urlparse.parse_qs(query_string)
-			else:
+			if query_string is None:
 				get_params = None
+			else:
+				get_params = urlparse.parse_qs(query_string)
 		
 			#setting more request variables IMPORTANT. fragile though. sorry
 			request.path = path
 			request.folder = path.rsplit('/',1)[0] + '/'
 			request.get_params = get_params
-			request.query_string = query_string
-		
-			#there must be a subdomain
-			if subdomain is None:
-				self.send_error(400,"Dropache requires a username as the route")
-				return None
-			
-			
-			#getting a subdomain_manager instance
-			#the factory function is an attribute of the server
-			#to keep it configurable
-			subdomain_manager = self.server.get_subdomain_manager()
-		
-			#looking up the oauth for the given subdomain
-			try:
-				subdomain_token = subdomain_manager.get_token(subdomain)
-				if subdomain_token is None:
-					self.send_error(404,"Subdomain %s does not exist"%subdomain)
-					return None
-			except util.subdomain_managers.SubdomainException as e:
-				self.send_error(503,"Error in subdomain lookup:\n"+e.message)
-				return None
-			
-			#getting a dropbox_client
-			#the factory function is an attribute of the server
-			#to keep it configurable
-			subdomain_client = self.server.get_dropbox_client(subdomain_token)
-		
+			request.query_string = query_string		
 		
 			#parsing post parameters if it is a post request
 			if method == 'post':
@@ -107,9 +77,18 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				request.post_params = post_params
 			else:
 				request.post_params = None
+				
+			
 		
-			#getting the response from dropbox
-			response = drapache.dbserver.DropboxServer(subdomain_client,request).serve()
+			#getting a dropbox client using the resolver
+			dropbox_client = dropbox_resolver().resolve(request)
+			
+			#we have to check is dropbox_client is instance of request
+			# (which means we have to return it)
+			if isinstance(dropbox_client, drapache.util.http.Response):
+			    response = dropbox_client
+			else:
+			    response = drapache.core.DropboxProxy(dropbox_client).serve(request)
 			
 			if response.error:
 				self.send_error(response.status,response.body)
@@ -138,74 +117,16 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			self.send_error(500,str(e))
 		
 		
-	def parse_raw_path(self,path):
-		"""
-		pulls out the user, the path, and the query if any
 
-		"""
-		
-		#*.drapache:port/<the rest of the path>
-		po = urlparse.urlparse(path)
-		sub_path = po.path
-		query = po.query
-		if sub_path == '':
-			sub_path = '/'
-		if query == '':
-			query = None
-		
-		return sub_path,query
 		
 
-class ThreadJoiningForkingMixIn:
+class ThreadJoiningForkingMixIn(SocketServer.ForkingMixIn):
 
 	"""
 	Mix-in class to handle each request in a new process.
 	COPIED FROM STANDARD LIBRARY
 	EXCEPT THAT IT WAITS ON ALL BACKGROUND THREADS TO FINISH BEFORE os._exit-ing
 	"""
-
-	timeout = 300
-	active_children = None
-	max_children = 40
-
-	def collect_children(self):
-		"""Internal routine to wait for children that have exited."""
-		if self.active_children is None: return
-		while len(self.active_children) >= self.max_children:
-			# XXX: This will wait for any child process, not just ones
-			# spawned by this library. This could confuse other
-			# libraries that expect to be able to wait for their own
-			# children.
-			try:
-				pid, status = os.waitpid(0, 0)
-			except os.error:
-				pid = None
-			if pid not in self.active_children: continue
-			self.active_children.remove(pid)
-
-		# XXX: This loop runs more system calls than it ought
-		# to. There should be a way to put the active_children into a
-		# process group and then use os.waitpid(-pgid) to wait for any
-		# of that set, but I couldn't find a way to allocate pgids
-		# that couldn't collide.
-		for child in self.active_children:
-			try:
-				pid, status = os.waitpid(child, os.WNOHANG)
-			except os.error:
-				pid = None
-			if not pid: continue
-			try:
-				self.active_children.remove(pid)
-			except ValueError, e:
-				raise ValueError('%s. x=%d and list=%r' % (e.message, pid,
-														   self.active_children))
-
-	def handle_timeout(self):
-		"""Wait for zombies after self.timeout seconds of inactivity.
-
-		May be extended, do not override.
-		"""
-		self.collect_children()
 
 	def process_request(self, request, client_address):
 		"""Fork a new subprocess to process the request."""
@@ -225,7 +146,7 @@ class ThreadJoiningForkingMixIn:
 				self.finish_request(request, client_address)
 				self.shutdown_request(request)
 				
-				JOINTHREADS_TIMEOUT = 10 #we will try for ten seconds to wait for background threads to finish
+				JOINsTHREADS_TIMEOUT = 10 #we will try for ten seconds to wait for background threads to finish
 				JOINTHREADS_INCREMENT = .1 #how long we try to join each thread
 				
 				been_waiting = 0
@@ -245,10 +166,6 @@ class ThreadJoiningForkingMixIn:
 					os._exit(1)
 		
 class DropboxForkingHTTPServer(ThreadJoiningForkingMixIn,BaseHTTPServer.HTTPServer):
-	
-	def set_config(self,subdomain_manager_factory,dropbox_client_factory):
-		self.get_subdomain_manager = subdomain_manager_factory
-		self.get_dropbox_client = dropbox_client_factory
 		
 	
 	#catchall errors
@@ -264,22 +181,10 @@ class DropboxForkingHTTPServer(ThreadJoiningForkingMixIn,BaseHTTPServer.HTTPServ
 			
 class HttpDrapache:
 
+	def start(self,port=8080):
 
-	def __init__(self):
-		self.port = None
-		self.subdomain_manager_factory = None
-		self.dropbox_client_factory = None
-
-	def start(self):
-
-		assert self.port
-		assert self.subdomain_manager_factory
-		assert self.dropbox_client_factory
-
-
-		server_address = ('0.0.0.0',self.port)
+	    server_address = ('0.0.0.0',port)
 		self.httpd = DropboxForkingHTTPServer(server_address,DropboxHTTPRequestHandler)
-		self.httpd.set_config(self.subdomain_manager_factory,self.dropbox_client_factory)
 		self.httpd.serve_forever()
 
 	

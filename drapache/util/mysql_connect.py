@@ -80,19 +80,18 @@ class DBConnection:
 		return "("+','.join(str(s) for s in input_sequence)+")"
 
 
-def _get_db_params(param_dict):
+def _get_db_params(in_param_dict):
 	"""
 	gets the database connection information
 	returns it as a dict
 	"""
-	if param_dict is None:
-		import dropache_dbconfig as config
+
+    param_dict = {}
 		
-		param_dict = {}
-		param_dict['user'] = config.USER
-		param_dict['passwd'] = config.PASS
-		param_dict['host'] = config.HOST
-		param_dict['db'] = config.DB
+	param_dict['user'] = in_param_dict.get("USER")
+	param_dict['passwd'] = in_param_dict.get("PASS")
+	param_dict['host'] = in_param_dict.get("HOST")
+	param_dict['db'] = in_param_dict.get("DB")
 	
 	param_dict['use_unicode'] = True
 	

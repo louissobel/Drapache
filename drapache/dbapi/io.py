@@ -18,7 +18,7 @@ class ReadableDropboxFile(StringIO.StringIO):
 	def __init__(self,path,client):
 		
 		try:
-			response,metadata = client.get_file_and_metadata(path)
+			response, metadata = client.get_file_and_metadata(path)
 		except dropbox.rest.ErrorResponse:
 			#or should i throw an exception? hmmm
 			#or should i return none

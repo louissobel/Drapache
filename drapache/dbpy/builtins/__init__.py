@@ -2,7 +2,4 @@
 
 
 
-
-class UserDieException(Exception):
-	pass
 	

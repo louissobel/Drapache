@@ -8,19 +8,14 @@ class DBPYModule:
 
 class DBPYEnvironment:
 	
-	DBPY_TIMEOUT = 25
-	BACKGROUND_THREAD_LIMIT = 10
+	DBPY_TIMEOUT = getattr(settings,'DBPY_TIMEOUT', 25)
+	BACKGROUND_THREAD_LIMIT = getattr(settings, 'DBPY_BACKGROUND_THREAD_LIMIT', 10)
 	
 	
 	def __init__(self,**kwargs):
 		
 		for k,v in kwargs.items():
-			setattr(self,k,v)
-		
-		self.request_folder = self.request.folder
-		self.get_params = self.request.get_params or {}
-		self.post_params = self.request.post_params or {}
-		
+			setattr(self,k,v)		
 		
 		#things that will be global to the builtins
 		self.globals = {}
@@ -28,22 +23,22 @@ class DBPYEnvironment:
 		#environment state stuff
 		self.modules = {}
 		self.cleanups = []
-		
 		self.background_thread_count = 0
 		
 		self.in_sandbox = True
 		
 		
 		def register(target):
-						
 			def decorator(function):
 				setattr(target,function.func_name,function)
 				return function
 			return decorator
-		register(self)(register)
 		
-		@register(self)	
-		def privileged(function):
+		# I like this line
+		(register)(self)(register)
+		
+	
+		def privileged(self,function):
 				"""
 				A decorator that replaces the given function with 
 				one that first takes the current frame out of the sandbox
@@ -51,8 +46,6 @@ class DBPYEnvironment:
 
 				There are some hacks that cater to the way that pysandbox (which is awesome) was written
 
-				And a dictionary was defined (in_sandbox) at the same scope os the function itself... this acts as
-				a global flag whether or not sandbox is currently enabled. This allows the nesting of privileged functions
 				"""
 				def outer_wrapper(*args,**kwargs):
 
@@ -99,8 +92,8 @@ class DBPYEnvironment:
 				
 				return outer_wrapper
 
-		@register(self)
-		def privileged_with_callback(callback,before=False):
+
+		def privileged_with_callback(self, callback,before=False):
 			"""
 			A decorator factory that returns a decorator that wraps the function
 			by privileging it, and composing it with the unprivileged callback
@@ -110,7 +103,7 @@ class DBPYEnvironment:
 
 			def outer_decorator(function):
 
-				function_p = privileged(function)
+				function_p = self.privileged(function)
 
 				if before:
 					def outer_wrapper(*args,**kwargs):
@@ -126,8 +119,10 @@ class DBPYEnvironment:
 
 			return outer_decorator
 			
-		#filling builtins with self
+		#filling builtins with self! yippee!
+		#this triggers the waterfall of dbpy builtins being built
 		self.globals['dbpy'] = builtins.dbpy.build(self,None)
+	
 	
 	def add_module(self,mod,name):
 		self.modules[name] = mod
@@ -142,3 +137,8 @@ class DBPYEnvironment:
 		
 	def add_cleanup(self,function):
 		self.cleanups.append(function)
+		
+		
+	@env.register(self)
+	class UserDieException(Exception):
+	    pass
