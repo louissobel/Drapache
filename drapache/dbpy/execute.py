@@ -13,6 +13,7 @@ import sandbox as pysandbox
 from drapache.util.http import Response
 from drapache import dbapi
 from drapache import util
+from drapache import settings
 
 import builtins
 import environment

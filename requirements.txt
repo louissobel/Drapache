@@ -3,6 +3,7 @@ dropbox==1.4
 markdown
 beaker
 requests
+import-utils
 
 #for beaker
 PyCrypto

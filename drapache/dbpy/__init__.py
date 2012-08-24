@@ -1,4 +1,4 @@
 import builtins
-import execute
+from execute import execute
 
 __all__ = ["builtins","execute"]

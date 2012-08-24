@@ -1,4 +1,5 @@
 #### Settings for Drapache
+
 import drapache
 
 ### Degbu
@@ -41,12 +42,13 @@ SUBDOMAIN_MYSQL_PARAMS = {
                             'PASS' : '',
                             'DB'   : ''
 }
+
 # and picking the Backend
-SUBDOMAIN_RESOLVER_BACKEND = drapche.core.resolvers.subdomain.FlatFileSubdomainBackend
+SUBDOMAIN_RESOLVER_BACKEND = 'drapache.core.resolvers.subdomain.FlatFileSubdomainBackend'
 
 
 ## Picking the actual resolver class!
-DROPBOX_RESOLVER = drapache.core.resolvers.SimpleResolver
+DROPBOX_RESOLVER = 'drapache.core.resolvers.SimpleResolver'
 
 
 ### DROPBOX PROXY SETTINGS
@@ -64,16 +66,16 @@ REPORT_DELETED = False
 # to state that it can handle a path will be used
 PATH_HANDLERS = (
                     #handles directory and indexes
-                    drapache.core.pathhandlers.DirectoryHandler,
+                    'drapache.core.handlers.DirectoryHandler',
                     
                     #handles executing DBPY files
-                    drapache.core.pathhandlers.DBPYHandler,
+                    'drapache.core.handlers.DBPYHandler',
                     
                     #uncomment this line to add markdown rendering
-                    #drapache.core.pathhandlers.MarkdownHandler,
+                    #'drapache.core.pathhandlers.MarkdownHandler',
                     
                     #handles the rest - serves as a static file
-                    drapache.core.pathhandlers.StaticHandler,
+                    'drapache.core.handlers.StaticHandler',
 )
 
 
@@ -111,3 +113,19 @@ DBPY_PRINT_EXCEPTIONS = True
 
 # debug?
 DBPY_DEBUG = True
+
+
+## Markdown Settings
+
+# optional markdown template location
+# A DROPBOX PATH!
+MARKDOWN_TEMPLATE_PATH = ''
+
+# A list of extensions to treat as markdown files
+MARKDOWN_EXTENSIONS = (
+                        'md',
+                        'mkd',
+                        'mkdn',
+                        'mdown',
+                        'markdown',
+)

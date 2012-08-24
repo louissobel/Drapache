@@ -10,7 +10,7 @@ class SimpleResolver:
     """
     
     
-    def resolve(self,request):
+    def resolve(self, request):
         
         for needed in ('OAUTH_TOKEN', 'OAUTH_TOKEN_SECRET', 'DROPBOX_APP_KEY', 'DROPBOX_APP_SECRET'):
             try:
