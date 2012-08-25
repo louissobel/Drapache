@@ -1,7 +1,7 @@
 import file
 import json_dbpy
 
-submodules = [file,json_dbpy]
+submodules = [file, json_dbpy]
 
 name = 'io'
 

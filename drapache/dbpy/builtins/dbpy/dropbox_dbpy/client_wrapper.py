@@ -56,7 +56,7 @@ def build(env,path):
 	
 	def register_client_method(method_name):
 		
-		method = getattr(env.client,method_name)
+		method = getattr(env.proxy.client, method_name)
 		
 		@env.register(self)
 		@env.protected

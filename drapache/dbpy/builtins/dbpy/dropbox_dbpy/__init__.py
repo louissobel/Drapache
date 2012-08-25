@@ -11,13 +11,14 @@ name = 'dropbox'
 __doc__ = "Access to your dropbox"
 
 
-def build(env,path):
+def build(env, path):
 	
 	self = env.get_new_module(path+'.'+name)
 	
 	for module in submodules:
 		setattr(self,module.name,module.build(env,path+'.'+name))
 		
+	client = env.proxy.client
 		
 	@env.register(self)
 	@env.privileged
@@ -29,7 +30,7 @@ def build(env,path):
 			path = env.request_folder + path
 
 		try:
-			env.client.file_delete(path)
+			client.file_delete(path)
 		except dropbox.rest.ErrorResponse:
 			raise IOError("Unable to delete file %s"%path)	
 	
@@ -48,7 +49,7 @@ def build(env,path):
 				
 		try:
 			
-			metadata = env.client.metadata(path)
+			metadata = client.metadata(path)
 			
 			if not metadata['is_dir']:
 				return None
@@ -73,7 +74,7 @@ def build(env,path):
 		
 		try:
 			
-			env.client.file_create_folder(path)
+			client.file_create_folder(path)
 			return path
 			
 		except dropbox.rest.ErrorResponse:

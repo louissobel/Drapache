@@ -93,7 +93,7 @@ class DBPYExecThread(KThread):
 			exec self.code in self.env.globals
 			
 		
-		except env.UserDieException:
+		except self.env.UserDieException:
 			# this doesn't count as an Exception, just that the user wanted to quit
 			pass
 		

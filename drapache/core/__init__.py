@@ -1,3 +1,3 @@
 from proxy import DropboxProxy
-import pathhandlers
+import handlers
 import resolvers

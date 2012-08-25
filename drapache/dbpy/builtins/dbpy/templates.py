@@ -14,9 +14,8 @@ def build(env,path):
 	#no submodules
 	
 	@env.privileged
-	def _render_template_to_string(path,with_data):
-		sys.stderr.write("foobar\n")
-		return dbapi.jinja.render_dropbox_template(env.client,path,with_data)
+	def _render_template_to_string(path, with_data):
+		return dbapi.jinja.render_dropbox_template(env.proxy.client, path, with_data)
 	
 	@env.register(self)
 	def render(path,with_data=None):
@@ -27,7 +26,7 @@ def build(env,path):
 		print render_to_string(path,with_data)
 		
 	@env.register(self)
-	def render_to_string(path,with_data=None):
+	def render_to_string(path, with_data=None):
 		"""
 		Renders the template like render_template, but returns it as a a string instead
 		of printing it.

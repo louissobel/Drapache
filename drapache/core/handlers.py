@@ -13,7 +13,6 @@ import jinja2
 
 import markdown
 
-print "ME"
 
 class DropboxPathHandler:
     

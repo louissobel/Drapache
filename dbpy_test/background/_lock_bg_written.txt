@@ -1,0 +1,1 @@
+lock for file bg_written.txt

@@ -8,7 +8,7 @@ name = 'file'
 
 __doc__ = "Functions for reading/writing with files that live on dropbox"
 
-def build(env,path):
+def build(env, path):
 	
 	self = env.get_new_module(path+'.'+name)
 	
@@ -16,12 +16,12 @@ def build(env,path):
 	
 	@env.register(self)
 	@env.privileged
-	def _get_lock(path,timeout):
+	def _get_lock(path, timeout):
 		"""
 		Internal function, public because, why hide it?
 		"""
 		try:
-			file_exists = env.locker.lock(path,timeout)
+			file_exists = env.locker.lock(path, timeout)
 		except IOError as e:
 			#then I wasn't able to lock
 			raise IOError("Timeout waiting to open %s for writing or appending'%path")
@@ -39,7 +39,7 @@ def build(env,path):
 	
 	@env.register(self)
 	@env.privileged
-	def open(path,to='read',timeout=None,allow_download=True):
+	def open(path,to='read', timeout=None, allow_download=True):
 		"""
 		Opens a file on your dropbox.
 		There are three modes: read, write, append, and json. If the mode is read, the file is simply
@@ -56,18 +56,18 @@ def build(env,path):
 		#if path starts with /, it is absolute.
 		#otherwise, it is relative to the request path
 		if not path.startswith('/'):
-			path = env.request_folder + path
+			path = env.request.folder + path
 				
 		if to == 'read':
 			try:
-				out_file = dbapi.io.ReadableDropboxFile(path,env.client)
+				out_file = dbapi.io.ReadableDropboxFile(path, env.proxy.client)
 			except IOError:
 				raise IOError('unable to open file %s for reading'%path)
 			
 		elif to == 'write' or to == 'append' or to == 'json':
 			
 			#this throws an IOError if it doesn't work
-			file_exists = _get_lock(path,timeout)
+			file_exists = _get_lock(path, timeout)
 			
 			#I have the lock at this point
 			#only download the file if it exists and allow_download is set to true
@@ -75,9 +75,9 @@ def build(env,path):
 			download = file_exists and allow_download
 			try:
 				if to == 'json':
-					out_file = dbapi.io.JSONDropboxFile(path,env.client,download=download)
+					out_file = dbapi.io.JSONDropboxFile(path, env.proxy.client, download=download)
 				else:
-					out_file = dbapi.io.WritableDropboxFile(path,env.client,download=download,mode=to)
+					out_file = dbapi.io.WritableDropboxFile(path, env.proxy.client, download=download, mode=to)
 			except IOError as e:
 				raise IOError('Unable to open file for writing ')
 				
@@ -110,7 +110,7 @@ def build(env,path):
 		"""
 		Writes the given string to the path given by `path`
 		"""
-		text_file = open(path,to='write',timeout=timeout,allow_download=False)
+		text_file = open(path, to='write', timeout=timeout, allow_download=False)
 		text_file.write(string)
 		close(text_file)
 		
@@ -129,10 +129,9 @@ def build(env,path):
 		"""
 		file_h = open(path)
 		content_type = file_h.metadata['mime_type']
-		dbpy.http.set_response_header('Content-Type',content_type)
+		dbpy.http.set_response_header('Content-Type', content_type)
 		sys.stdout.write(file_h.read())
 		
 	
-			
-			
+					
 	return self
