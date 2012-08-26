@@ -16,7 +16,7 @@ import import_utils
 
 import drapache
 
-
+from common import get_response
 
 
 
@@ -33,24 +33,19 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_POST(self):
         return self.serve(method='post')
     
-    def serve(self,method=None):
+    def serve(self, method=None):
         
         
-        dropbox_resolver_string = getattr(drapache.settings, 'DROPBOX_RESOLVER', 'drapache.core.resolvers.SimpleResolver')
-        dropbox_resolver = import_utils.import_module_from(dropbox_resolver_string)
-            
         try:
-                
             #### Processing the Request
-            #create an empty request object
-            request = drapache.util.http.Request()
+            
+            #create an empty request dictionary
+            request_dict = {}
 
             #setting some request variables
-            request.host = self.headers.get('Host')
-            request.headers = self.headers
-            
-            request.method = method
-        
+            request_dict['host'] = self.headers.get('Host')
+            request_dict['headers'] = self.headers
+            request_dict['method'] = method
         
             parsed_url_path = urlparse.urlparse(self.path)
             path = parsed_url_path.path
@@ -67,32 +62,22 @@ class DropboxHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 get_params = urlparse.parse_qs(query_string)
         
             #setting more request variables IMPORTANT. fragile though. sorry
-            request.path = path
-            request.folder = path.rsplit('/',1)[0] + '/'
-            request.get_params = get_params
-            request.query_string = query_string     
+            request_dict['path'] = path
+            request_dict['get_params'] = get_params
+            request_dict['query_string'] = query_string     
         
             #parsing post parameters if it is a post request
             if method == 'post':
                 request_length = int(self.headers.get('Content-length',0))
-                foo = self.rfile.read(request_length)
-                post_params = urlparse.parse_qs(foo)
-                request.post_params = post_params
-            else:
-                request.post_params = None
+                body = self.rfile.read(request_length)
+                post_params = urlparse.parse_qs(body)
+                request_dict['post_params'] = post_params
                 
-            
+            # create a request from the request dictionary
+            request = drapache.util.http.Request(**request_dict)
         
-            #getting a dropbox client using the resolver
-            dropbox_client = dropbox_resolver().resolve(request)
-            
-            # we have to check is dropbox_client is instance of request
-            # (which means we have to return it)
-            # this happens if the resolver short-circuits
-            if isinstance(dropbox_client, drapache.util.http.Response):
-                response = dropbox_client
-            else:
-                response = drapache.core.DropboxProxy(dropbox_client).serve(request)
+            # get the response
+            response = get_response(request)
             
             if response.error:
                 self.send_error(response.status,response.body)

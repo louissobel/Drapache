@@ -1,6 +1,5 @@
 #### Settings for Drapache
 
-import drapache
 
 ### Degbu
 DEBUG = True
@@ -80,7 +79,7 @@ PATH_HANDLERS = (
 
 
 
-### Ok now we need some path handler specific settings
+### Ok now we need some handler specific settings
 
 ## Directory Handler
 

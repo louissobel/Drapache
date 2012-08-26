@@ -18,7 +18,7 @@ def build(env,path):
 		return dbapi.jinja.render_dropbox_template(env.proxy.client, path, with_data)
 	
 	@env.register(self)
-	def render(path,with_data=None):
+	def render(path, with_data=None):
 		"""
 		Renders the jinja template found in `path`. The parameter `with_data` (None by default)
 		specifies a dictionary that will be used to fill in the template.

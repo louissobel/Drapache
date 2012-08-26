@@ -11,6 +11,7 @@ import dbpy
 import core
 
 from frontends.httpserver import HttpDrapache
+from frontends.wsgi import WsgiDrapache
 
 def set(in_settings):
 
