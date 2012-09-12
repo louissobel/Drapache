@@ -156,7 +156,7 @@ def execute(filestring, request, proxy):
 	
 	#setting up the parameters for the builtin construction
 	locker = dbapi.io.DropboxFileLocker(proxy.client)
-	cookie = request.headers.get('Cookie',None)
+	cookie = request.headers.get('Cookie')
 	session = util.sessions.DrapacheSession(cookie)
 	
 	builtin_params = dict(

@@ -18,10 +18,8 @@ class DropboxProxy:
     """
     The class responsable for hitting the dropbox and delegating to the correct file
     should this class get the dropbox client as well? that would be make more sense i think
-    """
-    
-    
-    def __init__(self,client):
+    """  
+    def __init__(self, client):
         self.client = client
         
         # loading them settings
@@ -34,18 +32,14 @@ class DropboxProxy:
     def serve(self, request):
         """
         serves the given request, returning a Response Object
-
-        """
-
-        
+        """   
         #anything prefixed with '_' is not accessable if HIDE_UNDERSCORES is set
         if self.HIDE_UNDERSCORES:
             path_components = request.path.split('/')
             for component in path_components:
                 if component.startswith('_'):
                     return Response(403,'Forbidden',error=True)
-        
-        
+               
         try:
             #fuck this extra request... is there a way to avoid it?
             #i don't think so.
